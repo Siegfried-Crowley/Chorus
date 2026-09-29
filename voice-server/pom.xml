@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.discord</groupId>
+    <groupId>org.chorus</groupId>
     <artifactId>voice-server</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>Discord Clone Voice Server</name>
-    <description>独立部署的最小 UDP 语音选择性转发器（RTP 数据面 + TCP 控制面，零第三方依赖）</description>
+    <name>Chorus Voice Server</name>
+    <description>Chorus 独立部署的最小 UDP 语音选择性转发器（RTP 数据面 + TCP 控制面，零第三方依赖）</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -11,8 +11,8 @@ import time
 import httpx
 import websockets
 
-B = "http://localhost:4001/discord"
-WS = "ws://localhost:4001/discord"
+B = "http://localhost:4001/chorus"
+WS = "ws://localhost:4001/chorus"
 results = []
 
 

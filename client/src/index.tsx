@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './components/App';
-import './styles/discord.css';
+import './styles/chorus.css';
 
 /**
  * 根级错误边界:任何渲染期异常都不再导致整页空白,

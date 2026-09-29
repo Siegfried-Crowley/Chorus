@@ -1,5 +1,5 @@
 /**
- * Discord Voice 客户端(真实音频 + 视频,基于 WS WebM 中继)。
+ * Chorus 音视频客户端(真实音频 + 视频,基于 WS WebM 中继)。
  *
  * 传输链路:
  *   getUserMedia(audio) → MediaRecorder(audio/webm;codecs=opus, timeslice 50ms, 32kbps)
@@ -62,7 +62,7 @@ class VoiceClient {
   private screenStream: MediaStream | null = null;
   private screenRecorder: MediaRecorder | null = null;
 
-  // 音频配置 — 匹配 Discord 参数
+  // 音频采集参数
   private readonly AUDIO_CONFIG: MediaTrackConstraints = {
     channelCount: 2,
     sampleRate: 48000,

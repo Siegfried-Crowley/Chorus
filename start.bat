@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo  Discord Clone - 一键启动
+echo  Chorus - 一键启动
 echo ========================================
 echo.
 
@@ -19,7 +19,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo [3/3] 启动后端...
 echo.
-echo 看到 "Started DiscordApplication" 后，新开终端执行:
+echo 看到 "Started ChorusApplication" 后，新开终端执行:
 echo   cd client ^&^& npm run dev
 echo.
 echo 浏览器打开 http://localhost:3000

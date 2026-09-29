@@ -1,4 +1,4 @@
-// 后端 REST/Gateway 载荷为 Discord 风格 snake_case，前端接口统一 camelCase。
+// 后端 REST/Gateway 载荷为 后端的 snake_case 命名，前端接口统一 camelCase。
 // 在数据边界（axios 拦截器 / Gateway 分发）做一次深度转换，其余代码保持 camelCase。
 const toCamel = (key: string) => key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
 

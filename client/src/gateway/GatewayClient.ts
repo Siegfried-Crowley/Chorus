@@ -1,5 +1,5 @@
 /**
- * Discord Gateway 客户端 (v9)
+ * Chorus Gateway 客户端 (v9)
  * 管理 WebSocket 连接、心跳、重连、事件分发
  *
  * 修复记录：
@@ -201,7 +201,7 @@ class GatewayClient {
       capabilities: 16381,
       properties: {
         os: navigator.platform,
-        browser: 'Discord Clone',
+        browser: 'Chorus',
         device: '',
         system_locale: navigator.language,
       },

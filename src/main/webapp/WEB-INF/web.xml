@@ -5,8 +5,8 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
 
-    <display-name>Discord Clone</display-name>
-    <description>Discord 克隆 — IM语音社交平台 (学习用途)</description>
+    <display-name>Chorus</display-name>
+    <description>Chorus — 智能音视频实时通讯平台</description>
 
     <!-- Spring Boot 通过 ServletContainerInitializer 自动注册，无需显式声明 DispatcherServlet -->
 

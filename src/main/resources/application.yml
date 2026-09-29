@@ -1,15 +1,15 @@
 # ============================================================================
-# Discord Clone — 默认开发配置 (MySQL，本机 Navicat 可连接)
-# 先在 MySQL 中创建数据库 discord_clone，JPA 自动建表 + 数据初始化。
+# Chorus — 默认开发配置 (MySQL，本机 Navicat 可连接)
+# 先在 MySQL 中创建数据库 chorus，JPA 自动建表 + 数据初始化。
 # ============================================================================
 
 spring:
   application:
-    name: discord-clone
+    name: chorus
 
   # MySQL 数据源
   datasource:
-    url: jdbc:mysql://localhost:3306/discord_clone?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&sessionVariables=sql_mode=''
+    url: jdbc:mysql://localhost:3306/chorus?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&sessionVariables=sql_mode=''
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: "123456"
@@ -49,11 +49,11 @@ spring:
 server:
   port: 4001
   servlet:
-    context-path: /
+    context-path: /chorus
 
 app:
   jwt:
-    secret: ${JWT_SECRET:discord-clone-dev-secret-key-2026-minimum-256-bits-long}
+    secret: ${JWT_SECRET:chorus-dev-secret-key-2026-minimum-256-bits-long}
     expiration: ${JWT_EXPIRATION:604800000}
   snowflake:
     worker-id: ${WORKER_ID:1}
@@ -80,7 +80,7 @@ app:
 
 logging:
   level:
-    org.discord: DEBUG
+    org.chorus: DEBUG
     org.springframework.web: INFO
     org.hibernate.SQL: WARN
 
@@ -93,9 +93,9 @@ spring:
       on-profile: postgres
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/discord_clone}
-    username: ${DB_USER:discord}
-    password: ${DB_PASSWORD:discord_dev_2026}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/chorus}
+    username: ${DB_USER:chorus}
+    password: ${DB_PASSWORD:chorus_dev_2026}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -113,11 +113,11 @@ app:
   minio:
     enabled: true
     endpoint: http://localhost:9000
-    access-key: discord_admin
+    access-key: chorus_admin
     secret-key: minio_dev_2026
-    bucket-attachments: discord-attachments
-    bucket-avatars: discord-avatars
-    bucket-thumbnails: discord-thumbnails
+    bucket-attachments: chorus-attachments
+    bucket-avatars: chorus-avatars
+    bucket-thumbnails: chorus-thumbnails
 
 ---
 # --- 生产环境配置 ---
@@ -134,5 +134,5 @@ app:
 
 logging:
   level:
-    org.discord: WARN
+    org.chorus: WARN
     org.springframework: WARN

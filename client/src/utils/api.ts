@@ -10,7 +10,7 @@ const api = axios.create({
 
 // 自动携带 JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('discord_token');
+  const token = localStorage.getItem('chorus_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,7 +27,7 @@ api.interceptors.response.use(
   },
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('discord_token');
+      localStorage.removeItem('chorus_token');
       window.location.hash = '#/login';
     }
     return Promise.reject(err);

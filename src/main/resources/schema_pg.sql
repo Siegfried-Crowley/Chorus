@@ -1,8 +1,8 @@
 -- ============================================================================
--- Discord Clone — Complete Database Schema
+-- Chorus — Complete Database Schema
 -- ============================================================================
 
--- Snowflake ID 生成函数 (Discord-compatible 64-bit ID)
+-- Snowflake ID 生成函数 (snowflake 64-bit ID)
 CREATE SEQUENCE IF NOT EXISTS snowflake_seq START 1;
 
 CREATE OR REPLACE FUNCTION generate_snowflake(worker_id INTEGER DEFAULT 1)

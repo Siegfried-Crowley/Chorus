@@ -147,7 +147,7 @@ const LoginPage: React.FC = () => {
           </div>
           <h1>{isRegister ? '创建账号' : '欢迎回来'}</h1>
           <p className="auth-subtitle">
-            {isRegister ? '创建一个新的 Discord 账号' : '输入邮箱和密码登录，或使用测试账号'}
+            {isRegister ? '创建一个新的 Chorus 账号' : '输入邮箱和密码登录，或使用测试账号'}
           </p>
         </div>
 

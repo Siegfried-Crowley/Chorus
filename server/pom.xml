@@ -11,12 +11,12 @@
         <relativePath/>
     </parent>
 
-    <groupId>org.discord</groupId>
-    <artifactId>discord-clone</artifactId>
+    <groupId>org.chorus</groupId>
+    <artifactId>chorus</artifactId>
     <version>1.0.0</version>
     <packaging>war</packaging>
-    <name>Discord Clone</name>
-    <description>Full-featured Discord clone for learning purposes</description>
+    <name>Chorus</name>
+    <description>Chorus - intelligent real-time audio/video communication platform</description>
 
     <properties>
         <java.version>17</java.version>

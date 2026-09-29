@@ -12,7 +12,7 @@ mvn -B package
 ## 运行
 
 ```bat
-java -cp target/classes org.discord.voice.sfu.VoiceSfuApp [rtpPort] [controlPort]
+java -cp target/classes org.chorus.voice.sfu.VoiceSfuApp [rtpPort] [controlPort]
 # 默认: RTP 4003/UDP, 控制 4004/TCP(仅回环) — 与主应用 application.yml 的
 # app.voice.server-port / app.voice.ws-port 一致
 ```

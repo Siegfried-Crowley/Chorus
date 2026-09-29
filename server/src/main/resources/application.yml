@@ -1,15 +1,15 @@
 # ============================================================================
-# Discord Clone — 默认开发配置 (H2 内嵌数据库，零安装)
+# Chorus — 默认开发配置 (H2 内嵌数据库，零安装)
 # 直接 mvn spring-boot:run 即可启动，无需 PostgreSQL/Redis/MinIO/Docker
 # ============================================================================
 
 spring:
   application:
-    name: discord-clone
+    name: chorus
 
   # H2 内嵌数据库 (文件持久化，数据重启不丢失)
   datasource:
-    url: jdbc:h2:file:./data/discord;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    url: jdbc:h2:file:./data/chorus;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -55,11 +55,11 @@ spring:
 server:
   port: 4001
   servlet:
-    context-path: /
+    context-path: /chorus
 
 app:
   jwt:
-    secret: ${JWT_SECRET:discord-clone-dev-secret-key-2026-minimum-256-bits-long}
+    secret: ${JWT_SECRET:chorus-dev-secret-key-2026-minimum-256-bits-long}
     expiration: ${JWT_EXPIRATION:604800000}
   snowflake:
     worker-id: ${WORKER_ID:1}
@@ -79,7 +79,7 @@ app:
 
 logging:
   level:
-    org.discord: DEBUG
+    org.chorus: DEBUG
     org.springframework.web: INFO
     org.hibernate.SQL: WARN
 
@@ -93,9 +93,9 @@ spring:
       on-profile: postgres
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/discord_clone}
-    username: ${DB_USER:discord}
-    password: ${DB_PASSWORD:discord_dev_2026}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/chorus}
+    username: ${DB_USER:chorus}
+    password: ${DB_PASSWORD:chorus_dev_2026}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -113,11 +113,11 @@ app:
   minio:
     enabled: true
     endpoint: http://localhost:9000
-    access-key: discord_admin
+    access-key: chorus_admin
     secret-key: minio_dev_2026
-    bucket-attachments: discord-attachments
-    bucket-avatars: discord-avatars
-    bucket-thumbnails: discord-thumbnails
+    bucket-attachments: chorus-attachments
+    bucket-avatars: chorus-avatars
+    bucket-thumbnails: chorus-thumbnails
 
 ---
 # --- 生产环境配置 ---
@@ -134,5 +134,5 @@ app:
 
 logging:
   level:
-    org.discord: WARN
+    org.chorus: WARN
     org.springframework: WARN

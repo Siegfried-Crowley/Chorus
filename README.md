@@ -69,19 +69,19 @@
 
 ### 第 2 步：用 IDEA + Tomcat 启动后端
 
-后端根项目（`src/`，即 IDEA 部署的 `discord-clone`）默认 profile 使用 **MySQL**（需本地 MySQL 已启动，数据库名 `discord_clone`，JPA 自动建表；用户名/密码见 `src/main/resources/application.yml`）。`server/` 树才是 H2 零依赖配置（docker 用）。
+后端根项目（`src/`，即 IDEA 部署的 `chorus`）默认 profile 使用 **MySQL**（需本地 MySQL 已启动，数据库名 `chorus`，JPA 自动建表；用户名/密码见 `src/main/resources/application.yml`）。`server/` 树才是 H2 零依赖配置（docker 用）。
 
 1. **确认 Tomcat 已配置**：`Run → Edit Configurations`，新建或使用已有的 **Tomcat Server → Local**
 2. **配置 Tomcat**：
    - **HTTP port**：`8080`
    - **VM options**：**留空或不填任何 `-Dspring.profiles.active=*` 和 DB 环境变量**（用默认配置）
-   - **Deployment**：添加 `discord-clone:war exploded`，**Application context** 填 `/discord`
-3. **确保 MySQL 已启动**（本机 3306），数据库 `discord_clone` 存在
+   - **Deployment**：添加 `chorus:war exploded`，**Application context** 填 `/discord`
+3. **确保 MySQL 已启动**（本机 3306），数据库 `chorus` 存在
 4. 点 ▶ **运行 Tomcat**，控制台出现 **Tomcat started** 且无报错即部署成功
 
 **验证后端**：浏览器打开以下地址，返回 **401** 说明应用已正常启动（Spring Security 拦截了未登录请求，无凭证统一返回 401 JSON）：
 ```
-http://localhost:8080/discord/api/auth/me
+http://localhost:8080/chorus/api/auth/me
 ```
 
 > ⚠️ **重要提醒**：README 下方旧章节提到的 `-Dspring.profiles.active=tomcat` profile 已不存在；Redis / MinIO 相关配置已从代码中移除。请**不要**照旧配置，否则 Tomcat 会因找不到 profile / 连不上库而启动失败。就用上面第 2 步的默认方式（根 `src/` 用 MySQL；想零依赖用 `server/` 树的 H2 配置）即可。
@@ -300,7 +300,7 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │
 ├── 📁 server/                       # 🖥️ 后端 (Spring Boot + Tomcat; docker 用 H2/PostgreSQL)
 │   ├── 📁 src/main/java/org/discord/
-│   │   ├── 📄 DiscordApplication.java   # 启动入口 (implements SpringBootServletInitializer)
+│   │   ├── 📄 ChorusApplication.java   # 启动入口 (implements SpringBootServletInitializer)
 │   │   ├── 📁 config/                   # 配置类
 │   │   │   ├── SecurityConfig.java      # Spring Security (JWT无状态)
 │   │   │   ├── JwtAuthFilter.java       # JWT 令牌过滤器
@@ -416,7 +416,7 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │   │   ├── 📁 utils/
 │   │   │   └── api.ts                  # REST API 封装 (axios)
 │   │   └── 📁 styles/
-│   │       └── discord.css             # 暗色主题完整样式
+│   │       └── chorus.css             # 暗色主题完整样式
 │   └── 📄 .env                         # 连接地址配置 (VITE_*)
 │
 ├── 📁 .github/workflows/
@@ -452,7 +452,7 @@ docker compose ps
 # 应该看到 postgres/redis/minio/server 全部 running
 
 # 4. 后端已经跑在 Tomcat 上了！
-#    验证: 浏览器打开 http://localhost:4001/discord/api/auth/me
+#    验证: 浏览器打开 http://localhost:4001/chorus/api/auth/me
 #    应该在登录前返回 401，说明API正常
 
 # 5. 启动前端
@@ -493,9 +493,9 @@ copy server\setenv.bat "C:\Program Files\Apache Software Foundation\Tomcat 10.0\
 # 2. 或者手动编辑 %TOMCAT_HOME%\bin\setenv.bat，内容如下：
 @echo off
 set JAVA_OPTS=%JAVA_OPTS% -Dspring.profiles.active=postgres
-set JAVA_OPTS=%JAVA_OPTS% -DDB_URL=jdbc:postgresql://localhost:5432/discord_clone
-set JAVA_OPTS=%JAVA_OPTS% -DDB_USER=discord
-set JAVA_OPTS=%JAVA_OPTS% -DDB_PASSWORD=discord_dev_2026
+set JAVA_OPTS=%JAVA_OPTS% -DDB_URL=jdbc:postgresql://localhost:5432/chorus
+set JAVA_OPTS=%JAVA_OPTS% -DDB_USER=chorus
+set JAVA_OPTS=%JAVA_OPTS% -DDB_PASSWORD=chorus_dev_2026
 ```
 
 #### 构建和部署
@@ -510,15 +510,15 @@ cd server
 mvn clean package -DskipTests
 
 # 3. 部署到 Tomcat
-#    把 target/discord-clone-1.0.0.war 复制到
-#    C:\Program Files\Apache Software Foundation\Tomcat 10.0\webapps\discord.war
+#    把 target/chorus-1.0.0.war 复制到
+#    C:\Program Files\Apache Software Foundation\Tomcat 10.0\webapps\chorus.war
 
 # 4. 启动 Tomcat
 net start Tomcat10
 # 或双击: C:\...\Tomcat 10.0\bin\startup.bat
 
 # 5. 验证部署
-#    浏览器打开 http://localhost:8080/discord/api/auth/me
+#    浏览器打开 http://localhost:8080/chorus/api/auth/me
 #    应该在未登录时返回 401
 
 # 6. 启动前端
@@ -544,7 +544,7 @@ cd server
 mvn spring-boot:run
 
 # 3. 验证
-#    http://localhost:4001/discord/api/auth/me
+#    http://localhost:4001/chorus/api/auth/me
 
 # 4. 启动前端
 cd client && npm install && npm start
@@ -1082,7 +1082,7 @@ npm start
 ### 3. Docker 启动后访问不到后端
 
 ```bash
-# 浏览器打开 http://localhost:4001/discord/api/auth/me
+# 浏览器打开 http://localhost:4001/chorus/api/auth/me
 # 返回 404 或连接失败
 ```
 
@@ -1098,10 +1098,10 @@ docker compose ps
 # postgres, redis, minio, server
 
 # Tomcat 的端口映射到 4001，访问地址是:
-# http://localhost:4001/discord/api/auth/me
+# http://localhost:4001/chorus/api/auth/me
 
 # 如果 4001 连不上，试试直接访问 Tomcat 端口:
-# http://localhost:8080/discord/api/auth/me
+# http://localhost:8080/chorus/api/auth/me
 ```
 
 ---
@@ -1125,7 +1125,7 @@ docker compose logs postgres
 # 确认 .env 或 setenv.bat 中的密码一致:
 # 用户名: discord
 # 密码: discord_dev_2026
-# 数据库名: discord_clone
+# 数据库名: chorus
 ```
 
 ---
@@ -1165,10 +1165,10 @@ services:
 REACT_APP_API_URL=http://localhost:8080/discord
 
 # Docker 部署:
-REACT_APP_API_URL=http://localhost:4001/discord
+REACT_APP_API_URL=http://localhost:4001/chorus
 
 # 嵌入式启动:
-REACT_APP_API_URL=http://localhost:4001/discord
+REACT_APP_API_URL=http://localhost:4001/chorus
 ```
 
 修改后要**重启前端**（Ctrl+C 停掉，重新 `npm start`）才会生效。
@@ -1181,7 +1181,7 @@ REACT_APP_API_URL=http://localhost:4001/discord
 - **表情选择器是常用集而非全量 Unicode**；@提及是精确用户名匹配，无模糊下拉补全
 - **单机内存版**：语音转发表与缓存（`CacheService`）都是进程内实现，不支持多实例横向扩展
 - **会话 resume 窗口 30 秒**：超过后重连需重新 Identify
-- **docker-compose 配置已修正但本机未装 Docker 验证**：`src/` 与 `server/` 双树用 `sync.bat` 一键同步（仅排除 `DiscordApplication.java`），改完后端记得跑一次
+- **docker-compose 配置已修正但本机未装 Docker 验证**：`src/` 与 `server/` 双树用 `sync.bat` 一键同步（仅排除 `ChorusApplication.java`），改完后端记得跑一次
 
 ---
 
@@ -1197,7 +1197,7 @@ REACT_APP_API_URL=http://localhost:4001/discord
 
 ### ☑️ 2. 收敛双源码树 — ✅ 已完成（方案 B：同步脚本）
 
-已写 `sync.bat`（robocopy 把 `src\main\java`、`src\test` 同步到 `server\`，仅排除 `DiscordApplication.java`）。改完后端跑一次即可：
+已写 `sync.bat`（robocopy 把 `src\main\java`、`src\test` 同步到 `server\`，仅排除 `ChorusApplication.java`）。改完后端跑一次即可：
 
 ```bat
 sync.bat

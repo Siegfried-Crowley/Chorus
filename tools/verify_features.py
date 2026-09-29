@@ -1,7 +1,7 @@
 # ============================================================================
 # 全功能逐项实测：对照论文表3-1 的 11 个功能域逐条验证
 # 角色分配：Alice=群主, Bob=普通成员, Eve=注册流程演示+第二成员
-# 前置：后端已启动(http://localhost:4001/discord, sql.init=always, 限流已放宽)
+# 前置：后端已启动(http://localhost:4001/chorus, sql.init=always, 限流已放宽)
 # 用法：python tools/verify_features.py
 # ============================================================================
 import asyncio
@@ -14,7 +14,7 @@ import zlib
 import httpx
 import websockets
 
-B = "http://localhost:4001/discord"
+B = "http://localhost:4001/chorus"
 LOG = r"D:\idea databas\test1\docs\build\backend.log"
 
 results = []
@@ -47,7 +47,7 @@ def latest_code(email):
 
 async def gw_connect(token):
     """建立网关连接并完成 Identify → READY，返回 (ws, session_id)"""
-    ws = await websockets.connect("ws://localhost:4001/discord/ws", max_size=2 ** 22)
+    ws = await websockets.connect("ws://localhost:4001/chorus/ws", max_size=2 ** 22)
     while True:
         m = json.loads(await ws.recv())
         if m.get("op") == 10:
@@ -212,7 +212,7 @@ async def main():
         r = await c.post("/api/voice/join", headers=ha, json={"guild_id": g, "channel_id": ch_voice, "session_id": sid})
         vt = r.json().get("token")
         check("加入语音频道（发放有效令牌）", r.status_code == 200 and bool(vt))
-        wsvoice = await websockets.connect("ws://localhost:4001/discord/ws/voice", max_size=2 ** 22)
+        wsvoice = await websockets.connect("ws://localhost:4001/chorus/ws/voice", max_size=2 ** 22)
         await wsvoice.send(json.dumps({"type": "join", "token": vt, "channelId": ch_voice}))
         jv = json.loads(await wsvoice.recv())
         check("语音 WS 鉴权接入", jv.get("type") == "joined", str(jv)[:60])

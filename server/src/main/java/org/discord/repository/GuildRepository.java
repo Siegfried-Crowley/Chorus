@@ -1,9 +1,0 @@
-package org.discord.repository;
-
-import org.discord.entity.Guild;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
-
-public interface GuildRepository extends JpaRepository<Guild, Long> {
-    List<Guild> findByOwnerId(Long ownerId);
-}

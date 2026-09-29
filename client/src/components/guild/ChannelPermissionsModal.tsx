@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import { channelApi, guildApi } from '../../utils/api';
 import { memberLabel } from '../../utils/message';
 
-// 展示的权限位（Discord bitmask）
+// 展示的权限位（权限位掩码）
 const PERMS = [
   { bit: 1n << 10n, label: '查看频道' },
   { bit: 1n << 11n, label: '发送消息' },

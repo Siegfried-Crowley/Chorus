@@ -255,7 +255,7 @@ interface AppState {
 export const useStore = create<AppState>()(
   immer((set, get) => ({
     // Initial state
-    token: localStorage.getItem('discord_token'),
+    token: localStorage.getItem('chorus_token'),
     currentUser: null,
     gatewayStatus: 'disconnected',
     ping: 0,
@@ -285,8 +285,8 @@ export const useStore = create<AppState>()(
     // Auth
     setToken: (token) => {
       set((state) => { state.token = token; });
-      if (token) localStorage.setItem('discord_token', token);
-      else localStorage.removeItem('discord_token');
+      if (token) localStorage.setItem('chorus_token', token);
+      else localStorage.removeItem('chorus_token');
     },
     setCurrentUser: (user) => set((state) => {
       // /auth/me 的 DTO 里 id 是数字,而 guild.ownerId 等均为字符串,统一转字符串避免严格比较失败

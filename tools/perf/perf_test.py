@@ -1,8 +1,8 @@
 # ============================================================================
 # Discord Clone 性能基准测试
 # 测量: REST API 延迟 / Gateway 广播扇出延迟 / 心跳 RTT / 语音中继端到端延迟
-# 运行前提: 后端已启动(http://localhost:4001/discord), 限流已放宽
-# 用法: python perf_test.py [--base http://localhost:4001/discord] [--out perf-results.json]
+# 运行前提: 后端已启动(http://localhost:4001/chorus), 限流已放宽
+# 用法: python perf_test.py [--base http://localhost:4001/chorus] [--out perf-results.json]
 # ============================================================================
 import argparse
 import asyncio
@@ -14,7 +14,7 @@ import time
 import httpx
 import websockets
 
-WS_BASE = "ws://localhost:4001/discord"
+WS_BASE = "ws://localhost:4001/chorus"
 ALICE = {"email": "alice2@test.dev", "password": "test123456"}
 BOB = {"email": "bob2@test.dev", "password": "test123456"}
 
@@ -253,7 +253,7 @@ async def bench_voice_relay(alice_token, bob_token, alice_id, guild_id, voice_id
 async def main():
     global BASE, HTTP
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base", default="http://localhost:4001/discord")
+    parser.add_argument("--base", default="http://localhost:4001/chorus")
     parser.add_argument("--out", default="perf-results.json")
     parser.add_argument("--seed", type=int, default=300)
     args = parser.parse_args()
