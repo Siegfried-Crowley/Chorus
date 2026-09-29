@@ -1,0 +1,58 @@
+@startuml fig4-1-architecture
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam component {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+}
+skinparam componentStyle rectangle
+skinparam package {
+  BackgroundColor #FFFFE0
+  BorderColor #A80036
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+}
+
+package "浏览器（React 18 单页应用）" {
+  component "聊天模块" as chat
+  component "语音模块" as voice
+  component "好友模块" as friend
+  component "群组管理模块" as guild
+  component "Gateway 客户端\n（心跳/Resume 状态机）" as gwclient
+}
+
+package "后端（Spring Boot 3.2，Tomcat 10.1）" {
+  component "Controller 层\n(Auth/Guild/Channel/Message/...)" as ctrl
+  component "Service 层\n(业务逻辑 + 权限校验)" as svc
+  component "Repository 层\n(Spring Data JPA)" as repo
+  component "权限引擎\nPermissionService /\nChannelAccessService" as perm
+  component "安全过滤器链\nJwtAuthFilter / RateLimitFilter /\nSecurityHeadersFilter" as sec
+  component "Gateway WebSocket 处理器\n(事件分发 / 会话管理)" as gateway
+  component "语音中继处理器\nVoiceAudioRouter" as relay
+}
+
+database "MySQL / H2 / PostgreSQL" as db
+
+chat --> ctrl : HTTP/JSON (REST)
+friend --> ctrl
+guild --> ctrl
+voice --> relay : /ws/voice\n(音频二进制帧)
+gwclient --> gateway : /ws\n(控制帧)
+gwclient <-- gateway : Dispatch 事件
+
+ctrl --> svc
+svc --> repo
+svc --> perm
+sec --> ctrl : 过滤请求
+relay --> svc
+repo --> db
+@enduml

@@ -1,0 +1,63 @@
+@startuml fig3-1-usecase
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam usecase {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+  ArrowColor #A80036
+}
+skinparam actor {
+  BorderColor #A80036
+  FontColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+}
+
+left to right direction
+
+actor "匿名用户" as anon
+actor "登录用户" as user
+actor "群组成员" as member
+actor "群组管理员\n/所有者" as admin
+
+rectangle "类 Discord 实时通信平台" {
+  usecase "注册与邮箱验证" as UC1
+  usecase "登录与两步验证" as UC2
+  usecase "维护个人资料\n与在线状态" as UC3
+  usecase "好友管理" as UC4
+  usecase "私信沟通" as UC5
+  usecase "创建 / 加入群组" as UC6
+  usecase "收发频道消息" as UC7
+  usecase "消息回应 / 置顶 / 搜索" as UC8
+  usecase "上传附件" as UC9
+  usecase "语音频道通话" as UC10
+  usecase "管理群组与频道" as UC11
+  usecase "角色与权限覆盖管理" as UC12
+  usecase "成员踢出 / 封禁" as UC13
+  usecase "查看审计日志" as UC14
+}
+
+anon --> UC1
+anon --> UC2
+user --> UC3
+user --> UC4
+user --> UC5
+user --> UC6
+user --> UC10
+member --> UC7
+member --> UC8
+member --> UC9
+member --> UC10
+admin --> UC11
+admin --> UC12
+admin --> UC13
+admin --> UC14
+@enduml

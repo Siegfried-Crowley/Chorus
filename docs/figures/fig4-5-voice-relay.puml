@@ -1,0 +1,45 @@
+@startuml fig4-5-voice-relay
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam component {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+}
+skinparam componentStyle rectangle
+skinparam package {
+  BackgroundColor #FFFFE0
+  BorderColor #A80036
+  FontColor #000000
+}
+skinparam queue {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+}
+
+package "成员 A 客户端" {
+  component "麦克风采集\ngetUserMedia" as mic
+  component "AudioContext\nOpus 编码封装" as enc
+}
+package "语音服务端（Spring Boot 内嵌 SFU）" {
+  component "VoiceSfuServer\n/ws/voice 端点" as sfu
+  component "VoiceAudioHandler\n二进制帧解析" as handler
+  component "VoiceAudioRouter\n按频道成员表转发\n(过滤静音/禁听成员)" as router
+  component "VoiceService\n加入/离开/令牌校验\n(VoiceAllocation 有效期)" as voiceSvc
+}
+package "成员 B / C 客户端" {
+  component "接收解码\nAudioContext 播放" as dec
+}
+
+mic --> enc
+enc --> sfu : WebM/Opus 音频帧\n(二进制上行)
+sfu --> handler
+handler --> router
+router --> dec : 音频帧下发\n(逐成员转发)
+voiceSvc ..> sfu : 控制面\n(成员进出与令牌)
+@enduml

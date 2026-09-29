@@ -1,0 +1,33 @@
+@startuml fig4-3-permission-flow
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam activity {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+  DiamondBackgroundColor #FFF3C4
+  DiamondBorderColor #A80036
+}
+skinparam activityStartColor #A80036
+skinparam activityEndColor #A80036
+
+start
+:取该用户 @everyone 角色权限作为基线;
+:按位或叠加所有自定义角色权限;
+if (该用户所在角色存在\n频道权限覆盖?) then (是)
+  :应用覆盖 deny 位\n(清除被显式拒绝的权限);
+  :应用覆盖 allow 位\n(置上被显式允许的权限);
+else (否)
+endif
+if (该用户本人存在\n频道权限覆盖?) then (是)
+  :应用覆盖 deny 位;
+  :应用覆盖 allow 位;
+else (否)
+endif
+:得到该用户在本频道的有效权限;
+stop
+@enduml

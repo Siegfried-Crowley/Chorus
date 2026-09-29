@@ -1,0 +1,105 @@
+@startuml fig4-2-er
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 17
+skinparam nodesep 12
+skinparam ranksep 30
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam class {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+  HeaderBackgroundColor #FFF3C4
+}
+
+entity "user 用户" as user {
+  * id
+  --
+  邮箱 / 密码哈希
+  用户名 / 头像 / 2FA
+}
+entity "guild 群组" as guild {
+  * id
+  --
+  名称 / 图标 / 拥有者
+}
+entity "guild_member 成员" as gm {
+  * 群组 + 用户
+  --
+  加入时间
+}
+entity "channel 频道" as ch {
+  * id
+  --
+  名称 / 类型 / 位置
+}
+entity "message 消息" as msg {
+  * 频道 + id
+  --
+  作者 / 内容
+}
+entity "role 角色" as role {
+  * id
+  --
+  权限位掩码(64位)
+}
+entity "member_role\n成员角色" as mr {
+  * 群组 + 用户 + 角色
+}
+entity "channel_overwrite\n权限覆盖" as ov {
+  * 频道 + 目标
+  --
+  allow / deny 位
+}
+entity "relationship 好友" as rel {
+  * 用户 + 对方
+  --
+  状态
+}
+entity "dm_channel 私信" as dm {
+  * id
+  --
+  成员集合
+}
+entity "invite 邀请" as inv {
+  * code
+  --
+  过期 / 次数限制
+}
+entity "guild_ban 封禁" as ban {
+  * 群组 + 用户
+  --
+  原因
+}
+entity "audit_log 审计" as audit {
+  * id
+  --
+  动作 / 详情JSON
+}
+entity "voice_state 语音" as vs {
+  * 用户 + 频道
+  --
+  静音 / 禁听
+}
+
+guild ||--o{ gm
+user ||--o{ gm
+guild ||--o{ ch
+guild ||--o{ role
+guild ||--o{ inv
+guild ||--o{ ban
+guild ||--o{ audit
+ch ||--o{ msg
+ch ||--o{ ov
+user ||--o{ msg
+role ||--o{ mr
+gm ||--o{ mr
+user ||--o{ vs
+ch ||--o{ vs
+user ||--o{ rel
+user ||--o{ dm
+@enduml

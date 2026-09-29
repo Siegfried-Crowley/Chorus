@@ -1,0 +1,42 @@
+@startuml fig5-1-sequence
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam sequence {
+  ParticipantBackgroundColor #FEFECE
+  ParticipantBorderColor #A80036
+  ParticipantFontColor #000000
+  LifeLineBorderColor #A80036
+  GroupBorderColor #A80036
+}
+skinparam actor {
+  BorderColor #A80036
+}
+
+actor "成员 A\n浏览器" as A
+participant "REST API\n(JwtAuthFilter)" as rest
+participant "MessageService" as ms
+participant "ChannelAccessService\n(权限引擎)" as cas
+database "数据库\n(JPA)" as db
+participant "Gateway\nWebSocket Handler" as gw
+actor "成员 B / C\n浏览器" as B
+
+A -> rest : POST /api/channels/{C}/messages\n(Authorization: Bearer <JWT>)
+rest -> rest : 验签 JWT，注入认证信息
+rest -> ms : createMessage(dto)
+ms -> cas : requireSendMessages(C, A)
+cas -> cas : 成员资格 + 权限位判定
+cas --> ms : 校验通过
+ms -> db : 事务提交，消息落库
+db --> ms : OK
+ms -> gw : dispatchChannelEvent(消息事件)
+gw -> B : Dispatch 帧\n(事件名 + 数据 + 序列号)
+gw -> B : (同步广播至群组全部在线会话)
+ms --> rest : 消息实体
+rest --> A : 201 Created
+A -> A : 乐观消息标记为已确认
+B -> B : 更新消息列表，\n界面即时渲染新消息
+@enduml

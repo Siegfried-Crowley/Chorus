@@ -1,0 +1,25 @@
+@startuml fig4-4-gateway-state
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam dpi 150
+skinparam ArrowColor #A80036
+skinparam state {
+  BackgroundColor #FEFECE
+  BorderColor #A80036
+  FontColor #000000
+}
+
+[*] --> 连接中 : 建立 WebSocket\n(/ws)
+连接中 --> 认证中 : 发送 Identify\n(携带 JWT)
+认证中 --> 就绪 : 服务端确认\n(READY 事件)
+就绪 --> 就绪 : Heartbeat /\nHeartbeat ACK (41.25s)
+就绪 --> 断线 : 连接异常 /\n收到 Reconnect(7)
+断线 --> 恢复中 : 30 秒窗口内\n发送 Resume(6)
+恢复中 --> 就绪 : 恢复成功\n(补发错失事件)
+恢复中 --> 认证中 : 会话失效\nInvalid Session(8)
+断线 --> [*] : 超时未恢复
+认证中 --> 认证中 : 重试认证
+@enduml
