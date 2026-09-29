@@ -60,7 +60,9 @@ public class MessageController {
         Long userId = (Long) auth.getPrincipal();
         Message message = messageService.updateMessage(
                 channelId, messageId, userId, body.get("content"));
-        return ResponseEntity.ok(messageService.toJson(message));
+        Map<String, Object> json = messageService.toJson(message);
+        gatewayHandler.dispatchChannelEvent(channelId, "MESSAGE_UPDATE", json, null);
+        return ResponseEntity.ok(json);
     }
 
     @DeleteMapping("/{messageId}")
@@ -70,6 +72,10 @@ public class MessageController {
             Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
         messageService.deleteMessage(channelId, messageId, userId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("channel_id", channelId.toString());
+        data.put("id", messageId.toString());
+        gatewayHandler.dispatchChannelEvent(channelId, "MESSAGE_DELETE", data, null);
         return ResponseEntity.ok().build();
     }
 

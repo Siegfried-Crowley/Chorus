@@ -12,7 +12,8 @@ public class AuthResponse {
 
     @Data @AllArgsConstructor @Builder
     public static class UserInfo {
-        private Long id;
+        /** 雪花 ID 超出 JS 安全整数范围(2^53),必须序列化为字符串,否则前端精度丢失 */
+        private String id;
         private String username;
         private String discriminator;
         private String globalName;

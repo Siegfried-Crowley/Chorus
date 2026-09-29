@@ -61,10 +61,12 @@ const MessageList: React.FC<Props> = ({ channelId, onReply, onOpenProfile }) => 
     if (!editText.trim() || editText === messages.find((m) => m.id === msgId)?.content) {
       setEditingId(null); return;
     }
+    const cur = messages.find((m) => m.id === msgId);
+    if (!cur) { setEditingId(null); return; }
     try {
       await messageApi.edit(channelId, msgId, editText);
       useStore.getState().updateMessage(channelId, {
-        ...messages.find((m) => m.id === msgId)!,
+        ...cur,
         content: editText,
         editedTimestamp: new Date().toISOString(),
       });
@@ -144,7 +146,7 @@ const MessageList: React.FC<Props> = ({ channelId, onReply, onOpenProfile }) => 
         <button className="load-more-btn" onClick={handleLoadMore}>加载更早的消息</button>
       </div>
       {messages.map((msg) => {
-        const isOwn = msg.authorId === currentUserId;
+        const isOwn = String(msg.authorId) === String(currentUserId);
         const refMsg = msg.messageReference?.message_id
           ? messages.find((m) => m.id === msg.messageReference!.message_id)
           : null;

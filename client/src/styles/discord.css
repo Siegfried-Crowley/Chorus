@@ -703,8 +703,176 @@ body {
   box-shadow: 0 0 8px rgba(35, 165, 90, 0.4);
 }
 
+/* 服务器名旁的"邀请好友"入口:一步直达邀请弹窗 */
+.sidebar-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-more-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text-normal);
+  opacity: 0.75;
+}
+
+.sidebar-more-btn:hover {
+  opacity: 1;
+  background: var(--bg-accent);
+}
+
+/* 服务器下拉菜单(显式入口,不再依赖右键) */
+.guild-menu {
+  position: absolute;
+  top: 46px;
+  right: 8px;
+  z-index: 60;
+  min-width: 168px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guild-menu-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-normal);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.guild-menu-item:hover {
+  background: var(--bg-accent);
+}
+
+.guild-menu-item.danger {
+  color: #ed4245;
+}
+
 .voice-user-name { font-size: 13px; flex: 1; }
 .voice-user-muted { font-size: 12px; }
+
+/* ===== 视频瓦片(摄像头/屏幕共享) ===== */
+.voice-panel-subtitle {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.voice-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.voice-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--bg-primary);
+  min-height: 92px;
+}
+
+.voice-tile.speaking {
+  border: 2px solid var(--green);
+}
+
+.voice-tile-video {
+  width: 100%;
+  height: 110px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #000;
+}
+
+.voice-tile-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.voice-tile-video.screen video {
+  object-fit: contain;
+  background: #1a1a1a;
+}
+
+.voice-tile-name {
+  font-size: 12px;
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-tile-badge {
+  font-size: 10px;
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.voice-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* 断开连接(红) / 重新加入(绿) */
+.voice-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voice-btn.disconnect {
+  background: #ed4245;
+  color: #fff;
+  border-color: #ed4245;
+}
+
+.voice-btn.disconnect:hover {
+  background: #c93b3e;
+}
+
+.voice-btn.reconnect {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+.voice-disconnected-banner {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: 4px;
+  padding: 6px;
+  margin-bottom: 8px;
+}
 
 .voice-controls {
   display: flex;

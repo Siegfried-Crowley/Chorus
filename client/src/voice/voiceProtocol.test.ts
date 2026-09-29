@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildJoinFrame, parseRelayedFrame, pickMseMime, pickRecorderMime, wsUrlFromLocation } from './voiceProtocol';
+import { buildFrame, buildJoinFrame, detectKind, parseRelayedFrame, pickMseMime, pickRecorderMime, wsUrlFromLocation } from './voiceProtocol';
 
 /** 构造 [8 字节大端 userId][payload] 帧 */
 function frameFor(userId: string, payload: Uint8Array): ArrayBuffer {
@@ -11,33 +11,74 @@ function frameFor(userId: string, payload: Uint8Array): ArrayBuffer {
 }
 
 describe('parseRelayedFrame', () => {
-  it('解析 8 字节大端前缀 + payload', () => {
-    const payload = new Uint8Array([1, 2, 3, 4]);
-    const { senderId, payload: out } = parseRelayedFrame(frameFor('1000000000000001', payload));
+  it('解析 8 字节大端前缀 + 旧式无 kind 标签的音频帧', () => {
+    // WebM EBML 头固定 0x1A 开头,不落入 kind 值 0/1/2 → 按音频(kind=0)处理
+    const payload = new Uint8Array([0x1a, 2, 3, 4]);
+    const { senderId, kind, payload: out } = parseRelayedFrame(frameFor('1000000000000001', payload));
     expect(senderId).toBe('1000000000000001');
-    expect(Array.from(out)).toEqual([1, 2, 3, 4]);
+    expect(kind).toBe(0);
+    expect(Array.from(out)).toEqual([0x1a, 2, 3, 4]);
+  });
+
+  it('解析 kind=1 摄像头帧(剥离 kind 字节)', () => {
+    const payload = new Uint8Array([1, 0x9d, 0x01, 0x2a]);
+    const { senderId, kind, payload: out } = parseRelayedFrame(frameFor('42', payload));
+    expect(senderId).toBe('42');
+    expect(kind).toBe(1);
+    expect(Array.from(out)).toEqual([0x9d, 0x01, 0x2a]);
+  });
+
+  it('解析 kind=2 屏幕共享帧', () => {
+    const payload = new Uint8Array([2, 0x81, 0x88]);
+    const { kind, payload: out } = parseRelayedFrame(frameFor('7', payload));
+    expect(kind).toBe(2);
+    expect(Array.from(out)).toEqual([0x81, 0x88]);
+  });
+
+  it('kind=0 音频帧(带显式标签)正确剥离', () => {
+    const payload = new Uint8Array([0, 0x1a, 0x45]);
+    const { kind, payload: out } = parseRelayedFrame(frameFor('9', payload));
+    expect(kind).toBe(0);
+    expect(Array.from(out)).toEqual([0x1a, 0x45]);
   });
 
   it('前缀按大端编码(userId 高低字节序正确)', () => {
     // userId=1 → 前缀应为 00 00 00 00 00 00 00 01
-    const frame = frameFor('1', new Uint8Array([9]));
+    const frame = frameFor('1', new Uint8Array([0x1a]));
     const bytes = new Uint8Array(frame);
     expect(Array.from(bytes.slice(0, 8))).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
-    expect(bytes[8]).toBe(9);
+    expect(bytes[8]).toBe(0x1a);
   });
 
-  it('空 payload 也能解析', () => {
-    const { senderId, payload } = parseRelayedFrame(frameFor('42', new Uint8Array(0)));
+  it('空 payload 也能解析(kind 默认 0)', () => {
+    const { senderId, kind, payload } = parseRelayedFrame(frameFor('42', new Uint8Array(0)));
     expect(senderId).toBe('42');
+    expect(kind).toBe(0);
     expect(payload.length).toBe(0);
   });
 
   it('接受 ArrayBufferView(如 Buffer/Blob 转来的视图)', () => {
-    const frame = frameFor('7', new Uint8Array([5]));
+    const frame = frameFor('7', new Uint8Array([0x1a, 5]));
     const view = new Uint8Array(frame, 0, frame.byteLength);
-    const { senderId, payload } = parseRelayedFrame(view);
+    const { senderId, kind, payload } = parseRelayedFrame(view);
     expect(senderId).toBe('7');
-    expect(payload[0]).toBe(5);
+    expect(kind).toBe(0);
+    expect(payload[0]).toBe(0x1a);
+  });
+});
+
+describe('buildFrame / detectKind', () => {
+  it('buildFrame 生成 [kind][chunk] 上行帧', () => {
+    const out = buildFrame(1, new Uint8Array([0x9d, 0x01]));
+    expect(Array.from(out)).toEqual([1, 0x9d, 0x01]);
+  });
+
+  it('detectKind:首字节 0/1/2 为 kind,其余(EBML 0x1A)按音频', () => {
+    expect(detectKind(new Uint8Array([0]))).toBe(0);
+    expect(detectKind(new Uint8Array([1]))).toBe(1);
+    expect(detectKind(new Uint8Array([2]))).toBe(2);
+    expect(detectKind(new Uint8Array([0x1a, 0x45]))).toBe(0);
+    expect(detectKind(new Uint8Array(0))).toBe(0);
   });
 });
 

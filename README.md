@@ -136,7 +136,7 @@ npm start
 | DM 实时广播 | 新私信只推给频道双方，越权访问被拒 |
 
 ### 🎤 语音频道（真实音频）
-> ✅ 已实现**真实音频**：`MediaRecorder(audio/webm;codecs=opus)` → 专用 WebSocket 中继 `/ws/voice`（服务端透明转发，前缀 8 字节发送者 ID）→ `MediaSource/SourceBuffer` 播放。Chrome/Edge/Firefox 通用，延迟约 200-500ms。旧 UDP SFU 骨架保留在 `voice-server/`（未启用）。
+> ✅ 已实现**真实音频**：`MediaRecorder(audio/webm;codecs=opus)` → 专用 WebSocket 中继 `/ws/voice`（服务端透明转发，前缀 8 字节发送者 ID）→ `MediaSource/SourceBuffer` 播放。Chrome/Edge/Firefox 通用，延迟约 200-500ms。另有**实时视频能力**（摄像头 + 屏幕共享）：中继帧加 1 字节 kind 标签（0=音频/1=摄像头/2=屏幕），VoiceAudioRouter 按 (发送者, kind) 分桶缓存 init 段供新人重放，静音只挡音频；客户端 VideoPlayback（video + MediaSource/SourceBuffer）按 kind 路由渲染瓦片。另有可独立部署的零依赖 UDP 选择性转发原型 `voice-server/`（RTP 头解析 + 按频道成员表转发，控制面 TCP 行协议，见其 README 与冒烟测试）。
 | 功能 | 说明 |
 |------|------|
 | 真实通话 | 讲话实时送达同频道成员，对方声音经中继播放 |
@@ -216,6 +216,15 @@ npm start
 
 > 后端另有 `server/` 树（docker 部署用）也带同一套测试：`mvn -f server/pom.xml test`。
 > 测试账号密码哈希已统一修正为 `test123` 对应的 bcrypt 值（原先 `server/` 种子误用了 `password` 的哈希，docker 登录会失败）。
+> `server/` 树（H2 文件库）的种子账号由启动时 `SeedUsersRunner` 自动播种——仅当用户表为空时插入，幂等可重复启动。
+
+### 覆盖率与验证工具
+
+- 后端已集成 **JaCoCo**：`mvn test` 后报告输出在 `target/site/jacoco/`，当前行覆盖率 **64.8%**（1869/2885 行）；
+- 前端：`cd client && npx vitest run --coverage`，23 个用例全绿（Gateway 状态机 + 音视频帧协议 kind 解析）；
+- **视频中继协议验证**：`python tools/test_video_relay.py`（7 项：三 kind 转发、旧帧兼容、静音只挡音频、init 分桶重放）；
+- **全功能实测**：后端启动后运行 `python tools/verify_features.py`，对照功能表的 **58 项端到端检查**（注册/2FA/资料/好友/私信/群组/频道/权限覆盖越权/消息全家桶/附件魔数/语音控制/实时推送/踢人封禁/审计日志）逐项打印 PASS/FAIL；
+- **性能基准**：`python tools/perf/perf_test.py`（限流需放宽），实测数据：顺序 REST P95 ≤ 16ms、网关广播扇出 10/50/100 会话 = 6.1/9.7/16.6ms、心跳 RTT 0.7ms、语音中继服务器端转发 0.65ms。
 
 ---
 
@@ -299,7 +308,8 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │   │   │   ├── WebSocketConfig.java     # Gateway + /ws/voice 注册
 │   │   │   ├── SecurityHeadersFilter.java # 安全响应头 (nosniff/deny/referrer)
 │   │   │   ├── GlobalExceptionHandler.java # 统一异常→JSON (类型化 ApiException)
-│   │   │   └── StaticResourceConfig.java # 静态资源映射 (uploads)
+│   │   │   ├── StaticResourceConfig.java # 静态资源映射 (uploads)
+│   │   │   └── SeedUsersRunner.java     # 启动播种演示账号 (表空才插入, 幂等)
 │   │   ├── 📁 entity/                   # 📦 数据实体 (19个类)
 │   │   │   ├── User.java, Guild.java, GuildMember.java
 │   │   │   ├── Channel.java, Message.java (分区表, MessageId)
@@ -334,15 +344,15 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │   │   │   ├── MessageController.java   # /api/channels/:id/messages/*
 │   │   │   ├── InviteController.java    # /api/invites/*
 │   │   │   ├── FriendController.java    # /api/friends/*
-│   │   │   ├── DmController.java        # /api/dms/*
-│   │   │   ├── AttachmentController.java# /api/attachments/*
+│   │   │   ├── DmController.java        # /api/dm/*
+│   │   │   ├── AttachmentController.java# /api/uploads
 │   │   │   └── VoiceController.java     # /api/voice/*
 │   │   ├── 📁 gateway/                  # 🔌 WebSocket Gateway
 │   │   │   └── GatewayWebSocketHandler.java  # 协议实现 (Opcode 1-12) + 公会广播
 │   │   ├── 📁 voice/                    # 🔊 语音
 │   │   │   ├── VoiceAudioHandler.java   # /ws/voice 音频中继 (控制帧+二进制帧)
 │   │   │   ├── VoiceAudioRouter.java    # 频道转发表 (静音/禁听/initChunk缓存)
-│   │   │   └── VoiceSfuServer.java      # UDP SFU 骨架 (未启用)
+│   │   │   └── VoiceSfuServer.java      # 内嵌 UDP SFU (演进保留)
 │   │   ├── 📁 dto/                      # 数据传输对象
 │   │   └── 📁 util/
 │   │       ├── JwtUtil.java             # JWT 令牌工具
@@ -350,9 +360,9 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │   │
 │   ├── 📁 src/main/resources/
 │   │   ├── 📄 application.yml           # 配置 (3个Profile: default/postgres/prod)
-│   │   ├── 📄 schema.sql                # 建表脚本
-│   │   ├── 📄 data.sql                  # H2 测试种子
-│   │   └── 📄 seed.sql                  # 3个测试用户
+│   │   ├── 📄 schema.sql                # 建表脚本 (docker postgres 初始化用)
+│   │   ├── 📄 data.sql                  # 演示用户种子 (H2 文件库实际由 SeedUsersRunner 播种)
+│   │   └── 📄 seed.sql                  # PostgreSQL 容器初始化种子
 │   │
 │   ├── 📁 src/main/webapp/WEB-INF/
 │   │   └── 📄 web.xml                   # Tomcat 部署描述符
@@ -411,6 +421,12 @@ D:\IDEA DATABAS\TEST1\              # 项目根目录
 │
 ├── 📁 .github/workflows/
 │   └── 📄 ci.yml                       # 🤖 CI: 后端 src/server 双树 mvn test + 前端 tsc/vitest
+├── 📁 voice-server/                    # 🔊 独立语音转发器 (零依赖 UDP SFU 原型, RTP 4003/控制 4004)
+├── 📁 tools/
+│   ├── 📄 verify_features.py           # ✅ 全功能逐项实测脚本 (58 项检查, 需后端已启动)
+│   └── 📁 perf/
+│       └── perf_test.py                # 📊 性能基准 (REST延迟/网关扇出/心跳RTT/语音中继延迟)
+├── 📁 docs/                            # 📚 毕业论文 (md 源稿 + docx 成品 + EA 风格 UML 图 + 界面截图)
 ├── 📄 sync.bat                         # 🔁 一键同步 src/main/java + src/test → server/
 ├── 📄 docker-compose.yml               # 🐳 一键编排所有服务
 ├── 📄 pom.xml                          # Maven 依赖 (WAR打包)

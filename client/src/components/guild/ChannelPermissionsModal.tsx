@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { channelApi, guildApi } from '../../utils/api';
+import { memberLabel } from '../../utils/message';
 
 // 展示的权限位（Discord bitmask）
 const PERMS = [
@@ -14,9 +15,9 @@ const PERMS = [
 
 interface Overwrite {
   id: string;
-  channel_id: string;
+  channelId: string;
   type: number; // 0 role, 1 member
-  target_id: string;
+  targetId: string;
   allow: string;
   deny: string;
 }
@@ -48,9 +49,9 @@ const ChannelPermissionsModal: React.FC<Props> = ({ channelId, guildId, onClose 
   }, [channelId, guildId]);
 
   const targetName = (ow: Overwrite) => {
-    if (ow.type === 0) return roles.find((r) => r.id === ow.target_id)?.name || `角色 ${ow.target_id}`;
-    const m = members[ow.target_id];
-    return m?.nickname || `用户 ${ow.target_id.slice(-4)}`;
+    const tid = String(ow.targetId ?? '');
+    if (ow.type === 0) return roles.find((r) => r.id === tid)?.name || `角色 ${tid}`;
+    return memberLabel(members[tid]);
   };
 
   const bit = (maskStr: string, b: bigint) => {
@@ -148,7 +149,7 @@ const ChannelPermissionsModal: React.FC<Props> = ({ channelId, guildId, onClose 
                 <option value="">选择目标...</option>
                 {candidateTargets.map((t: any) => (
                   <option key={t.id} value={t.id}>
-                    {t.name || t.nickname || `用户 ${String(t.id).slice(-4)}`}
+                    {t.name || memberLabel({ ...t, userId: t.id })}
                   </option>
                 ))}
               </select>

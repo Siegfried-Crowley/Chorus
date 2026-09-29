@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
-import { channelApi } from '../../utils/api';
+import { channelApi, guildApi } from '../../utils/api';
 import { PERMS, computeGuildPerms, isOwnerOf } from '../../utils/permissions';
 import ChannelPermissionsModal from './ChannelPermissionsModal';
 import CreateChannelModal from './CreateChannelModal';
+import GuildSettingsModal, { InvitesTab } from './GuildSettingsModal';
 
 const ChannelSidebar: React.FC = () => {
   const { guilds, channels, activeGuildId, activeChannelId, setActiveChannel,
-    voiceStates, currentUser, roles, members, updateChannel, removeChannel, unreadCount } = useStore();
+    voiceStates, currentUser, roles, members, updateChannel, removeChannel, unreadCount,
+    setActiveGuild, removeGuild, setSidebar } = useStore();
   const [permChannelId, setPermChannelId] = useState<string | null>(null);
   const [createFor, setCreateFor] = useState<{ type: number; parentId?: string } | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [menu, setMenu] = useState<{ channelId: string; x: number; y: number } | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showGuildMenu, setShowGuildMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const guildMenuRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const guild = activeGuildId ? guilds[activeGuildId] : null;
@@ -38,6 +44,36 @@ const ChannelSidebar: React.FC = () => {
 
   const voiceUserCount = (channelId: string) =>
     Object.values(voiceStates).filter((vs) => vs.channelId === channelId).length;
+
+  const leaveGuild = async () => {
+    if (!guild || !activeGuildId) return;
+    if (isOwner) {
+      alert('你是该服务器的所有者，不能离开。可在「服务器设置 → 概览」中删除服务器。');
+      setShowGuildMenu(false);
+      return;
+    }
+    if (!window.confirm(`确定离开服务器「${guild.name}」?`)) { setShowGuildMenu(false); return; }
+    try {
+      await guildApi.leave(activeGuildId);
+      removeGuild(activeGuildId);
+      setActiveGuild(null);
+      setActiveChannel(null);
+      setSidebar('friends');
+    } catch (err: any) {
+      alert(err.response?.data?.error || '操作失败');
+    }
+    setShowGuildMenu(false);
+  };
+
+  // 点菜单外部关闭
+  useEffect(() => {
+    if (!showGuildMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (guildMenuRef.current && !guildMenuRef.current.contains(e.target as Node)) setShowGuildMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showGuildMenu]);
 
   const openMenu = (e: React.MouseEvent, channelId: string) => {
     e.preventDefault();
@@ -136,8 +172,36 @@ const ChannelSidebar: React.FC = () => {
 
   return (
     <div className="channel-sidebar">
-      <div className="sidebar-header">
+      <div className="sidebar-header" ref={guildMenuRef}>
         <h3>{guild.name}</h3>
+        {/* 显式的服务器菜单:此前"服务器设置/离开服务器"只能右键图标触发,界面上无从发现 */}
+        <button
+          className="sidebar-more-btn"
+          title="服务器菜单"
+          onClick={() => setShowGuildMenu((v) => !v)}
+        >
+          ︙
+        </button>
+        {showGuildMenu && (
+          <div className="guild-menu">
+            <button className="guild-menu-item" onClick={() => { setShowInvite(true); setShowGuildMenu(false); }}>
+              🔗 邀请好友
+            </button>
+            {canManage && (
+              <button className="guild-menu-item" onClick={() => { setCreateFor({ type: 0 }); setShowGuildMenu(false); }}>
+                ➕ 创建频道
+              </button>
+            )}
+            <button className="guild-menu-item" onClick={() => { setShowSettings(true); setShowGuildMenu(false); }}>
+              ⚙️ 服务器设置
+            </button>
+            {!isOwner && (
+              <button className="guild-menu-item danger" onClick={leaveGuild}>
+                🚪 离开服务器
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="sidebar-scroll">
@@ -185,6 +249,22 @@ const ChannelSidebar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {showSettings && activeGuildId && (
+        <GuildSettingsModal guildId={activeGuildId} onClose={() => setShowSettings(false)} />
+      )}
+
+      {showInvite && activeGuildId && (
+        <div className="modal-overlay" onClick={() => setShowInvite(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔗 邀请好友</h3>
+              <button className="modal-close" onClick={() => setShowInvite(false)}>✕</button>
+            </div>
+            <InvitesTab guildId={activeGuildId} />
+          </div>
+        </div>
+      )}
 
       {permChannelId && activeGuildId && (
         <ChannelPermissionsModal

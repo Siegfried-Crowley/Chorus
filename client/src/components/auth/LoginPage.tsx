@@ -34,7 +34,7 @@ const LoginPage: React.FC = () => {
     try {
       if (isRegister) {
         const result = await authApi.register({ username, email, password });
-        if (result.requires_verification) {
+        if (result.requiresVerification) {
           // 验证码已打印到后端日志
           setStep('verify-email');
         } else {
@@ -42,8 +42,8 @@ const LoginPage: React.FC = () => {
         }
       } else {
         const result = await authApi.login({ email, password });
-        if (result.requires_2fa) {
-          setMfaToken(result.mfa_token);
+        if (result.requires2fa) {
+          setMfaToken(result.mfaToken);
           setStep('verify-2fa');
         } else {
           completeAuth(result);

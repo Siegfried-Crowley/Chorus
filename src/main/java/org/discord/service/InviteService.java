@@ -97,8 +97,10 @@ public class InviteService {
         if (member == null) throw new ForbiddenException("Not a member");
         long perms = permissionService.calculateGuildPermissions(
                 guildService.getGuild(guildId), member);
-        if (!permissionService.hasPermission(perms, permissionService.MANAGE_GUILD)) {
-            throw new ForbiddenException("Missing MANAGE_GUILD permission");
+        // 与 createInvite 保持一致:能创建邀请的成员就应能看到邀请列表,
+        // 否则普通成员创建后界面无任何变化(列表 403),会误以为失败而重复创建
+        if (!permissionService.hasPermission(perms, permissionService.CREATE_INSTANT_INVITE)) {
+            throw new ForbiddenException("Missing CREATE_INSTANT_INVITE permission");
         }
         return inviteRepository.findByGuildIdOrderByCreatedAtDesc(guildId);
     }

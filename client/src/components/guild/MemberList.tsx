@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 import { guildApi } from '../../utils/api';
 import { PERMS, computeGuildPerms, isOwnerOf } from '../../utils/permissions';
+import { memberLabel } from '../../utils/message';
 
 const ONLINE_STATUS: Record<string, string> = {
   online: 'online',
@@ -29,11 +30,11 @@ const MemberList: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (!guild || !guildMembers) return null;
+  if (!guild || !guildMembers || !currentUser) return null;
 
   const memberList = Object.values(guildMembers).sort((a, b) => {
-    const ao = a.userId === guild.ownerId;
-    const bo = b.userId === guild.ownerId;
+    const ao = String(a.userId) === String(guild.ownerId);
+    const bo = String(b.userId) === String(guild.ownerId);
     if (ao !== bo) return ao ? -1 : 1;
     return a.joinedAt.localeCompare(b.joinedAt);
   });
@@ -78,7 +79,9 @@ const MemberList: React.FC = () => {
   };
 
   const doNickname = async (userId: string) => {
-    const cur = guildMembers[userId]?.nickname || '';
+    const cur = guildMembers[userId]?.nickname
+      || guildMembers[userId]?.globalName
+      || guildMembers[userId]?.username || '';
     const nick = window.prompt('修改昵称(留空清除)', cur);
     if (nick === null) { setMenuUserId(null); return; }
     try {
@@ -91,6 +94,7 @@ const MemberList: React.FC = () => {
 
   const toggleRole = async (userId: string, roleId: string, checked: boolean) => {
     const member = guildMembers[userId];
+    if (!member) return;
     const next = checked
       ? [...member.roles, roleId]
       : member.roles.filter((r) => r !== roleId);
@@ -103,7 +107,7 @@ const MemberList: React.FC = () => {
 
   const renderRow = (m: any) => {
     const status = presences[m.userId]?.status;
-    const isMe = m.userId === currentUser!.id;
+    const isMe = String(m.userId) === String(currentUser!.id);
     return (
       <div
         key={m.userId}
@@ -112,13 +116,13 @@ const MemberList: React.FC = () => {
       >
         <span className={`member-avatar`}>
           <span className="member-initial">
-            {(m.nickname || m.userId).charAt(0).toUpperCase()}
+            {memberLabel(m).charAt(0).toUpperCase()}
           </span>
           <span className={`presence-dot ${ONLINE_STATUS[status] ? status : 'offline'}`} />
         </span>
         <span className="member-name">
           {m.userId === guild.ownerId ? <span className="member-crown">👑 </span> : null}
-          {m.nickname || (m.userId === currentUser!.id ? currentUser!.username : m.userId)}
+          {String(m.userId) === String(currentUser!.id) ? currentUser!.username : memberLabel(m)}
         </span>
 
         {menuUserId === m.userId && !isMe && (

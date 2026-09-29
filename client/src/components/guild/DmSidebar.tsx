@@ -34,7 +34,7 @@ const DmSidebar: React.FC = () => {
                 <span className="channel-name">
                   {dm.recipient?.username || '私信'}
                   <span className="dm-last-message">
-                    {dm.last_message || (dm.last_message_id ? '' : '新私信')}
+                    {dm.lastMessage || (dm.lastMessageId ? '' : '新私信')}
                   </span>
                 </span>
                 {(unreadCount[dm.id] || 0) > 0 && activeChannelId !== dm.id && (

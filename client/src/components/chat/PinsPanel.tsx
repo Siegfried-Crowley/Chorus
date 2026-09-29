@@ -17,7 +17,7 @@ const PinsPanel: React.FC<Props> = ({ channelId, onClose, onJump }) => {
 
   useEffect(() => {
     messageApi.getPins(channelId)
-      .then((data: any[]) => setPins(data))
+      .then((data: any) => setPins(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [channelId]);

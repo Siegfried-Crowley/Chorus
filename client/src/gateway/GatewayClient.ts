@@ -73,6 +73,8 @@ class GatewayClient {
       if (gen !== this.generation) return;
       try {
         const msg = JSON.parse(event.data);
+        // 注意: 网关载荷保持 snake_case 原样分发(客户端协议字段与 toMessage 均按 snake 读取),
+        // 仅 REST 响应在 api.ts 统一转 camelCase
         this.handleMessage(msg);
       } catch (e) {
         console.error('[Gateway] Parse error', e);

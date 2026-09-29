@@ -69,7 +69,7 @@ interface MarkdownProps {
 
 /** 完整 Markdown:先切出代码块,再对普通段做行内渲染 */
 export const Markdown: React.FC<MarkdownProps> = ({ text }) => {
-  if (!text) return <>{''}</>;
+  if (!text || typeof text !== 'string') return <>{''}</>;
   const parts = text.split(/(```[\s\S]*?```)/g);
   return (
     <>

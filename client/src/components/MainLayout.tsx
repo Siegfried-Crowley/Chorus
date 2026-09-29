@@ -13,7 +13,7 @@ import CreateGuildModal from './guild/CreateGuildModal';
 
 const normalizeRole = (r: any) => ({
   id: r.id,
-  guildId: r.guild_id,
+  guildId: r.guildId ?? r.guild_id,
   name: r.name,
   color: r.color,
   hoist: !!r.hoist,

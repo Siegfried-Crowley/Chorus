@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Map;
@@ -43,6 +45,13 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .orElse("Invalid request");
         return ResponseEntity.badRequest().body(Map.of("error", msg));
+    }
+
+    @ExceptionHandler({NumberFormatException.class, ClassCastException.class,
+            HttpMessageNotReadableException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception e) {
+        log.warn("Bad request: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(Map.of("error", "Invalid request parameters"));
     }
 
     @ExceptionHandler(RuntimeException.class)

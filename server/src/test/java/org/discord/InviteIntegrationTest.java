@@ -155,10 +155,16 @@ class InviteIntegrationTest extends BaseIntegrationTest {
         assertThat(list.size()).isEqualTo(1);
         assertThat(list.get(0).path("code").asText()).isEqualTo(code);
 
-        // 普通成员加入后无 MANAGE_GUILD → 无权限查看
+        // 能创建邀请的成员即可查看列表(与 createInvite 的 CREATE_INSTANT_INVITE 一致):
+        // 若要求更高的 MANAGE_GUILD,普通成员会"创建成功但列表无变化",误以为失败而重复创建
         post("/api/invites/" + code + "/join", bobToken, Map.of());
-        ResponseEntity<String> denied = raw(HttpMethod.GET, "/api/guilds/" + guildId + "/invites", bobToken, null);
-        assertThat(denied.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        ResponseEntity<String> asMember = raw(HttpMethod.GET, "/api/guilds/" + guildId + "/invites", bobToken, null);
+        assertThat(asMember.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(parse(asMember.getBody()).size()).isGreaterThanOrEqualTo(1);
+
+        // 安全边界:非成员依旧无权查看邀请列表
+        ResponseEntity<String> nonMember = raw(HttpMethod.GET, "/api/guilds/" + guildId + "/invites", charlieToken, null);
+        assertThat(nonMember.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 
         // 删除邀请
         ResponseEntity<String> del = raw(HttpMethod.DELETE, "/api/invites/" + code, aliceToken, null);

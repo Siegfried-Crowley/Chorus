@@ -12,6 +12,10 @@ import org.discord.repository.ChannelOverwriteRepository;
 import org.discord.repository.ChannelRepository;
 import org.discord.repository.DmChannelRepository;
 import org.discord.repository.GuildMemberRepository;
+import org.discord.repository.InviteRepository;
+import org.discord.repository.MessageRepository;
+import org.discord.repository.VoiceAllocationRepository;
+import org.discord.repository.VoiceStateRepository;
 import org.discord.util.SnowflakeGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +35,10 @@ public class ChannelService {
     private final PermissionService permissionService;
     private final SnowflakeGenerator snowflake;
     private final AuditLogService auditLogService;
+    private final InviteRepository inviteRepository;
+    private final MessageRepository messageRepository;
+    private final VoiceStateRepository voiceStateRepository;
+    private final VoiceAllocationRepository allocationRepository;
 
     // Channel types (matching Discord)
     public static final short TYPE_GUILD_TEXT = 0;
@@ -114,6 +122,11 @@ public class ChannelService {
         Long guildId = channel.getGuildId();
         String name = channel.getName();
         overwriteRepository.deleteByChannelId(channelId);
+        // 关联数据清理:邀请/消息/语音状态与分配(防孤儿行,也避免外键约束违约)
+        inviteRepository.deleteByChannelId(channelId);
+        messageRepository.deleteByChannelId(channelId);
+        voiceStateRepository.deleteByChannelId(channelId);
+        allocationRepository.deleteByChannelId(channelId);
         channelRepository.deleteById(channelId);
         if (guildId != null) {
             auditLogService.log(guildId, actorId, AuditLogService.CHANNEL_DELETE, channelId,

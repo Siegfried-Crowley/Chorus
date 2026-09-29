@@ -69,7 +69,24 @@ export interface GuildMember {
   nickname?: string;
   joinedAt: string;
   roles: string[];
+  /** 用户资料(服务端 /guilds/{id}/members 一并返回,用于无昵称时显示用户名) */
+  username?: string;
+  globalName?: string;
+  discriminator?: string;
+  avatar?: string;
 }
+
+// 后端成员 JSON 为 snake_case 且可能缺省 roles，统一归一化后再入 store
+const normalizeMember = (m: any): GuildMember => ({
+  userId: String(m.userId ?? m.user_id ?? ''),
+  nickname: m.nickname ?? undefined,
+  joinedAt: String(m.joinedAt ?? m.joined_at ?? ''),
+  roles: Array.isArray(m.roles) ? m.roles : [],
+  username: m.username ?? undefined,
+  globalName: m.globalName ?? m.global_name ?? undefined,
+  discriminator: m.discriminator ?? undefined,
+  avatar: m.avatar ?? undefined,
+});
 
 export interface Role {
   id: string;
@@ -93,6 +110,12 @@ export interface VoiceStateData {
   deaf: boolean;
 }
 
+/** 远端视频推流状态:谁在推摄像头/屏幕共享 */
+export interface VideoSenderState {
+  camera: boolean;
+  screen: boolean;
+}
+
 export interface Relationship {
   id: string;
   type: number; // 1:friend, 2:blocked, 3:incoming, 4:outgoing
@@ -107,6 +130,9 @@ export interface DmChannel {
   type: number; // 1
   name?: string | null;
   icon?: string | null;
+  lastMessageId?: string | null;
+  lastMessage?: string | null;
+  // 旧 snake 形态兼容(网关直传或旧缓存)
   last_message_id?: string | null;
   last_message?: string | null;
   recipient?: {
@@ -137,6 +163,7 @@ interface AppState {
   relationships: Relationship[];
   dmChannels: DmChannel[];                                // 私信频道列表
   voiceStates: Record<string, VoiceStateData>;            // userId -> state
+  videoSenders: Record<string, VideoSenderState>;         // userId -> {camera, screen}
   presences: Record<string, { status: string; activities: any[] }>;
 
   // 未读 + 输入中
@@ -208,6 +235,7 @@ interface AppState {
 
   // Voice actions
   setVoiceState: (state: VoiceStateData) => void;
+  setVideoSenders: (map: Record<string, VideoSenderState>) => void;
   removeVoiceState: (userId: string) => void;
   setSpeaking: (userId: string, speaking: boolean) => void;
   setVoiceConnected: (connected: boolean) => void;
@@ -239,6 +267,7 @@ export const useStore = create<AppState>()(
     relationships: [],
     dmChannels: [],
     voiceStates: {},
+    videoSenders: {},
     presences: {},
     unreadCount: {},
     lastReadId: {},
@@ -259,7 +288,12 @@ export const useStore = create<AppState>()(
       if (token) localStorage.setItem('discord_token', token);
       else localStorage.removeItem('discord_token');
     },
-    setCurrentUser: (user) => set((state) => { state.currentUser = user; }),
+    setCurrentUser: (user) => set((state) => {
+      // /auth/me 的 DTO 里 id 是数字,而 guild.ownerId 等均为字符串,统一转字符串避免严格比较失败
+      state.currentUser = user
+        ? { ...user, id: String(user.id), discriminator: user.discriminator ?? '0000' }
+        : null;
+    }),
     setGatewayStatus: (status) => set((state) => { state.gatewayStatus = status; }),
     setPing: (ping) => set((state) => { state.ping = ping; }),
 
@@ -378,10 +412,17 @@ export const useStore = create<AppState>()(
     }),
     replaceOptimisticMessage: (channelId, tempId, real) => set((state) => {
       const msgs = state.messages[channelId];
-      if (msgs) {
-        const idx = msgs.findIndex((m) => m.id === tempId);
-        if (idx >= 0) msgs[idx] = real;
+      if (!msgs) return;
+      const idx = msgs.findIndex((m) => m.id === tempId);
+      if (idx < 0) return;
+      // 自己发的消息会同时经 REST 响应与 Gateway 推送到达:若网关已先写入同一条
+      // 真实消息,则只移除临时条目(否则会渲染出两条相同消息并触发 React key 冲突)
+      const alreadyArrived = msgs.some((m, i) => i !== idx && m.id === real.id);
+      if (alreadyArrived) {
+        msgs.splice(idx, 1);
+        return;
       }
+      msgs[idx] = real;
     }),
 
     // Unread / typing
@@ -404,12 +445,17 @@ export const useStore = create<AppState>()(
     // Members
     setMembers: (guildId, members) => set((state) => {
       state.members[guildId] = {};
-      members.forEach((m) => { state.members[guildId][m.userId] = m; });
+      members.forEach((m) => {
+        const nm = normalizeMember(m);
+        state.members[guildId][nm.userId] = nm;
+      });
     }),
     addGuildMember: (guildId, member) => set((state) => {
       if (!state.members[guildId]) state.members[guildId] = {};
-      state.members[guildId][member.userId] = member;
-      if (state.guilds[guildId]) state.guilds[guildId].memberCount++;
+      const nm = normalizeMember(member);
+      const existed = !!state.members[guildId][nm.userId];
+      state.members[guildId][nm.userId] = nm;
+      if (!existed && state.guilds[guildId]) state.guilds[guildId].memberCount++;
     }),
     removeGuildMember: (guildId, userId) => set((state) => {
       if (state.members[guildId]) {
@@ -421,10 +467,10 @@ export const useStore = create<AppState>()(
       delete state.voiceStates[userId];
     }),
     updateGuildMember: (guildId, member) => set((state) => {
-      const m = state.members[guildId]?.[member.userId];
+      const m = state.members[guildId]?.[member.userId ?? (member as any).user_id];
       if (m) {
-        if (member.nickname !== undefined) m.nickname = member.nickname;
-        if (member.roles !== undefined) m.roles = member.roles;
+        const nm = normalizeMember({ ...m, ...member });
+        state.members[guildId][nm.userId] = nm;
       }
     }),
 
@@ -450,10 +496,17 @@ export const useStore = create<AppState>()(
 
     // Voice
     setVoiceState: (voiceState) => set((state) => {
-      state.voiceStates[voiceState.userId] = voiceState;
+      // 脏数据防护:userId 缺失的广播直接忽略(否则 voiceStates["undefined"] 会让渲染崩溃)
+      if (!voiceState || voiceState.userId == null || String(voiceState.userId).length === 0) return;
+      const userId = String(voiceState.userId);
+      state.voiceStates[userId] = { ...voiceState, userId };
     }),
     removeVoiceState: (userId) => set((state) => {
+      if (userId == null || userId === '') return;
       delete state.voiceStates[userId];
+    }),
+    setVideoSenders: (map) => set((state) => {
+      state.videoSenders = map;
     }),
     setSpeaking: (userId, speaking) => set((state) => {
       if (speaking) state.speakingUsers.add(userId);
@@ -488,3 +541,4 @@ export const useStore = create<AppState>()(
     }),
   }))
 );
+

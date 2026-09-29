@@ -6,6 +6,7 @@ import org.discord.gateway.GatewayWebSocketHandler;
 import org.discord.service.ChannelAccessService;
 import org.discord.service.GuildService;
 import org.discord.service.ChannelService;
+import org.discord.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,17 +21,23 @@ public class GuildController {
     private final ChannelService channelService;
     private final ChannelAccessService channelAccess;
     private final GatewayWebSocketHandler gatewayHandler;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> createGuild(@RequestBody Map<String, String> body,
                                                             Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
-        Guild guild = guildService.createGuild(body.get("name"), userId);
-        return ResponseEntity.ok(Map.of(
-                "id", guild.getId().toString(),
-                "name", guild.getName(),
-                "owner_id", guild.getOwnerId().toString()
-        ));
+        String name = body.get("name");
+        if (name == null || name.isBlank()) {
+            throw new org.discord.exception.BadRequestException("Guild name required");
+        }
+        Guild guild = guildService.createGuild(name, userId);
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", guild.getId().toString());
+        res.put("name", guild.getName());
+        res.put("owner_id", guild.getOwnerId().toString());
+        res.put("member_count", guild.getMemberCount());
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping
@@ -55,13 +62,13 @@ public class GuildController {
         Long userId = (Long) auth.getPrincipal();
         channelAccess.requireGuildMember(guildId, userId);
         Guild guild = guildService.getGuild(guildId);
-        return ResponseEntity.ok(Map.of(
-                "id", guild.getId().toString(),
-                "name", guild.getName(),
-                "icon", guild.getIcon(),
-                "owner_id", guild.getOwnerId().toString(),
-                "member_count", guild.getMemberCount()
-        ));
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", guild.getId().toString());
+        res.put("name", guild.getName());
+        res.put("icon", guild.getIcon());
+        res.put("owner_id", guild.getOwnerId().toString());
+        res.put("member_count", guild.getMemberCount());
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/{guildId}/channels")
@@ -90,11 +97,24 @@ public class GuildController {
         Long userId = (Long) auth.getPrincipal();
         channelAccess.requireGuildMember(guildId, userId);
         List<GuildMember> members = guildService.getGuildMembers(guildId);
+        // 批量取用户资料:成员列表需要展示用户名,否则无昵称成员只能显示雪花 ID 数字串
+        List<Long> userIds = members.stream().map(GuildMember::getUserId).toList();
+        Map<Long, User> userMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            userRepository.findAllById(userIds).forEach(u -> userMap.put(u.getId(), u));
+        }
         List<Map<String, Object>> result = members.stream().map(m -> {
             Map<String, Object> map = new HashMap<>();
             map.put("user_id", m.getUserId().toString());
             map.put("nickname", m.getNickname());
             map.put("joined_at", m.getJoinedAt() != null ? m.getJoinedAt().toString() : null);
+            User u = userMap.get(m.getUserId());
+            if (u != null) {
+                map.put("username", u.getUsername());
+                map.put("discriminator", u.getDiscriminator());
+                map.put("global_name", u.getGlobalName());
+                map.put("avatar", u.getAvatar());
+            }
             return map;
         }).toList();
         return ResponseEntity.ok(result);
@@ -233,6 +253,7 @@ public class GuildController {
                                                          Authentication auth) {
         Long actorId = (Long) auth.getPrincipal();
         String reason = body != null ? (String) body.get("reason") : null;
+        boolean wasMember = guildService.getMember(guildId, userId) != null;
         GuildBan ban = guildService.banMember(guildId, userId, actorId, reason);
         gatewayHandler.refreshUserGuilds(userId);
         Map<String, Object> data = new HashMap<>();
@@ -240,8 +261,10 @@ public class GuildController {
         data.put("user_id", userId.toString());
         data.put("reason", ban.getReason());
         gatewayHandler.dispatchToGuild(guildId, "GUILD_BAN_ADD", data, null);
-        // 若被禁者在公会内,同时广播成员移除
-        gatewayHandler.dispatchToGuild(guildId, "GUILD_MEMBER_REMOVE", data, null);
+        // 仅当被禁者当时在公会内才广播成员移除(否则前端会误减 memberCount)
+        if (wasMember) {
+            gatewayHandler.dispatchToGuild(guildId, "GUILD_MEMBER_REMOVE", data, null);
+        }
         return ResponseEntity.ok(data);
     }
 

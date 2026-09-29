@@ -10,4 +10,5 @@ public interface VoiceStateRepository extends JpaRepository<VoiceState, Long> {
     Optional<VoiceState> findByGuildIdAndUserId(Long guildId, Long userId);
     void deleteByGuildIdAndUserId(Long guildId, Long userId);
     void deleteByGuildId(Long guildId);
+    void deleteByChannelId(Long channelId);
 }

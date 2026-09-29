@@ -37,8 +37,8 @@ const ProfileModal: React.FC<Props> = ({ onClose }) => {
       setCurrentUser({
         ...currentUser,
         username: res.username,
-        globalName: res.global_name,
-        aboutMe: res.about_me,
+        globalName: res.globalName,
+        aboutMe: res.aboutMe,
         avatar: res.avatar ?? currentUser.avatar,
       });
       onClose();
@@ -92,11 +92,11 @@ const ProfileModal: React.FC<Props> = ({ onClose }) => {
     try {
       if (currentUser.mfaEnabled) {
         const res = await authApi.disable2fa();
-        setCurrentUser({ ...currentUser, mfaEnabled: res.mfa_enabled });
+        setCurrentUser({ ...currentUser, mfaEnabled: res.mfaEnabled });
         setPwMsg('两步验证已关闭');
       } else {
         const res = await authApi.enable2fa();
-        setCurrentUser({ ...currentUser, mfaEnabled: res.mfa_enabled });
+        setCurrentUser({ ...currentUser, mfaEnabled: res.mfaEnabled });
         setPwMsg('两步验证已开启，验证码已打印到后端日志。下次登录时需要输入验证码');
       }
     } catch (err: any) {

@@ -20,7 +20,7 @@ const CreateGuildModal: React.FC<Props> = ({ onClose }) => {
     setLoading(true);
     try {
       const guild = await guildApi.create(name.trim());
-      addGuild(guild);
+      addGuild({ ...guild, memberCount: guild.memberCount ?? 1 });
       setActiveGuild(guild.id);
       setSidebar('guilds');
       onClose();

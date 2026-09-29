@@ -11,9 +11,9 @@ interface Profile {
   id: string;
   username: string;
   discriminator?: string;
-  global_name?: string;
+  globalName?: string;
   avatar?: string;
-  about_me?: string;
+  aboutMe?: string;
   banner?: string;
   accent_color?: number;
 }
@@ -69,12 +69,12 @@ const UserProfileModal: React.FC<Props> = ({ userId, onClose }) => {
                 {profile.avatar ? (
                   <img src={profile.avatar} alt="avatar" />
                 ) : (
-                  <span>{(profile.global_name || profile.username).charAt(0).toUpperCase()}</span>
+                  <span>{(profile.globalName || profile.username || '?').charAt(0).toUpperCase()}</span>
                 )}
               </div>
               <div className="user-profile-info">
                 <div className="user-profile-name">
-                  {profile.global_name || profile.username}
+                  {profile.globalName || profile.username}
                   <span className="user-profile-tag">#{profile.discriminator || '0000'}</span>
                 </div>
                 <div className="user-profile-username">@{profile.username}</div>
@@ -83,7 +83,7 @@ const UserProfileModal: React.FC<Props> = ({ userId, onClose }) => {
 
             <div className="user-profile-about">
               <div className="profile-section-title">关于我</div>
-              <p>{profile.about_me || '这个人很懒，什么都没写~'}</p>
+              <p>{profile.aboutMe || '这个人很懒，什么都没写~'}</p>
             </div>
           </>
         )}

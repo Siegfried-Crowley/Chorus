@@ -43,13 +43,13 @@ public class ChannelController {
         // 查看频道详情前先做访问校验(DM 成员 / 公会成员 + VIEW_CHANNEL)
         channelAccess.requireChannelAccess(channelId, userId);
         Channel channel = channelService.getChannel(channelId);
-        return ResponseEntity.ok(Map.of(
-                "id", channel.getId().toString(),
-                "guild_id", channel.getGuildId() != null ? channel.getGuildId().toString() : null,
-                "name", channel.getName(),
-                "type", (int) channel.getType(),
-                "topic", channel.getTopic() != null ? channel.getTopic() : ""
-        ));
+        Map<String, Object> res = new HashMap<>();
+        res.put("id", channel.getId().toString());
+        res.put("guild_id", channel.getGuildId() != null ? channel.getGuildId().toString() : null);
+        res.put("name", channel.getName());
+        res.put("type", (int) channel.getType());
+        res.put("topic", channel.getTopic() != null ? channel.getTopic() : "");
+        return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{channelId}")

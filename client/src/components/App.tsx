@@ -130,7 +130,15 @@ const App: React.FC = () => {
 
     // 好友关系变化（接受请求等）：刷新好友列表
     const unsubRelSync = gatewayClient.on('RELATIONSHIPS_SYNC', (data: any) => {
-      if (data.relationships) useStore.getState().setRelationships(data.relationships);
+      if (!Array.isArray(data.relationships)) return;
+      useStore.getState().setRelationships(data.relationships.map((r: any) => ({
+        id: String(r.id ?? ''),
+        type: r.type ?? 1,
+        username: r.username ?? '未知用户',
+        discriminator: r.discriminator ?? '0000',
+        avatar: r.avatar ?? undefined,
+        globalName: r.globalName ?? r.global_name ?? undefined,
+      })));
     });
     const unsubRelUpdate = gatewayClient.on('RELATIONSHIP_UPDATE', (data: any) => {
       // 收到新好友，刷新好友列表 + 若在 DM 视图刷新私信列表
@@ -139,19 +147,21 @@ const App: React.FC = () => {
     });
 
     const unsubVoice = gatewayClient.on('VOICE_STATE_UPDATE', (data: any) => {
+      const userId = data.user_id != null ? String(data.user_id) : '';
+      if (!userId || data.guild_id == null) return;
       if (data.channel_id) {
         useStore.getState().setVoiceState({
-          guildId: data.guild_id,
-          channelId: data.channel_id,
-          userId: data.user_id,
-          sessionId: data.session_id,
-          selfMute: data.self_mute,
-          selfDeaf: data.self_deaf,
-          mute: data.mute || false,
-          deaf: data.deaf || false,
+          guildId: String(data.guild_id),
+          channelId: String(data.channel_id),
+          userId,
+          sessionId: data.session_id ?? '',
+          selfMute: !!data.self_mute,
+          selfDeaf: !!data.self_deaf,
+          mute: !!data.mute,
+          deaf: !!data.deaf,
         });
       } else {
-        useStore.getState().removeVoiceState(data.user_id);
+        useStore.getState().removeVoiceState(userId);
       }
     });
 
@@ -210,6 +220,17 @@ const App: React.FC = () => {
       const st = useStore.getState();
       if (st.channels[data.id]) st.updateChannel(toChannel(data));
     });
+    // 消息编辑/删除的实时同步(服务端 MessageController 广播)
+    const unsubMsgUpdate = gatewayClient.on('MESSAGE_UPDATE', (data: any) => {
+      const msg = toMessage(data);
+      if (msg.channelId) useStore.getState().updateMessage(msg.channelId, msg);
+    });
+    const unsubMsgDelete = gatewayClient.on('MESSAGE_DELETE', (data: any) => {
+      if (data.channel_id && data.id) {
+        useStore.getState().removeMessage(String(data.channel_id), String(data.id));
+      }
+    });
+
     const unsubChannelDelete = gatewayClient.on('CHANNEL_DELETE', (data: any) => {
       useStore.getState().removeChannel(data.id);
     });
@@ -240,6 +261,8 @@ const App: React.FC = () => {
       unsubChannelCreate();
       unsubChannelUpdate();
       unsubChannelDelete();
+      unsubMsgUpdate();
+      unsubMsgDelete();
       gatewayClient.destroy();
     };
   }, [token, currentUser, setGatewayStatus]);

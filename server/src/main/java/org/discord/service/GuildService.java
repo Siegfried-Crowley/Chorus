@@ -205,16 +205,18 @@ public class GuildService {
             voiceStateRepository.findByGuildIdAndUserId(guildId, m.getUserId())
                     .ifPresent(vs -> voiceService.leaveVoice(guildId, m.getUserId()));
         }
+        // 邀请先删(其外键指向频道,避免删除频道时违反外键约束)
+        inviteRepository.deleteByGuildId(guildId);
         // 频道级联: overwrites + messages + 频道本身
         for (Channel c : channelRepository.findByGuildIdOrderByPositionAsc(guildId)) {
             overwriteRepository.deleteByChannelId(c.getId());
             messageRepository.deleteByChannelId(c.getId());
+            voiceStateRepository.deleteByChannelId(c.getId());
             channelRepository.delete(c);
         }
         roleRepository.deleteByGuildId(guildId);
         memberRoleRepository.deleteByGuildId(guildId);
         memberRepository.deleteByGuildId(guildId);
-        inviteRepository.deleteByGuildId(guildId);
         banRepository.deleteByGuildId(guildId);
         auditLogRepository.deleteByGuildId(guildId);
         guildRepository.delete(guild);

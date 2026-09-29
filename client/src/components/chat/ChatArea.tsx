@@ -22,7 +22,7 @@ const ChatArea: React.FC = () => {
   useEffect(() => {
     if (!activeChannelId) return;
     messageApi.list(activeChannelId, { limit: 50 })
-      .then((msgs: any[]) => setMessages(activeChannelId, msgs.map(toMessage).reverse()))
+      .then((msgs: any) => setMessages(activeChannelId, (Array.isArray(msgs) ? msgs : []).map(toMessage).reverse()))
       .then(() => useStore.getState().markChannelRead(activeChannelId))
       .catch(console.error);
   }, [activeChannelId, setMessages]);

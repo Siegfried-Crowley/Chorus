@@ -226,6 +226,15 @@ public class GatewayWebSocketHandler extends TextWebSocketHandler {
             session.status = GatewayStatus.READY;
             sessionById.put(session.sessionId, session);
 
+            // Resume 后重建订阅集合(否则重连期间收不到公会事件,断开时语音状态泄漏)
+            List<Guild> resumeGuilds = guildService.getUserGuilds(session.userId);
+            Set<Long> resumeGuildIds = new HashSet<>();
+            for (Guild g : resumeGuilds) resumeGuildIds.add(g.getId());
+            session.guildIds = resumeGuildIds;
+            session.friendIds = new HashSet<>(friendService.getFriendUserIds(session.userId));
+            cache.set("session:" + session.sessionId, session.userId.toString(),
+                    java.time.Duration.ofSeconds(30));
+
             // Resume 的会话同样需要心跳超时监控（与 Identify 保持一致）
             session.lastHeartbeat = Instant.now();
             scheduleHeartbeatTimeout(session);
@@ -308,7 +317,9 @@ public class GatewayWebSocketHandler extends TextWebSocketHandler {
             if (channelId == null) {
                 voiceService.leaveVoice(guildId, session.userId);
             } else {
-                voiceService.joinVoice(guildId, channelId, session.userId, session.sessionId);
+                voiceService.joinVoice(guildId, channelId, session.userId, session.sessionId,
+                        data.has("self_mute") ? data.get("self_mute").asBoolean(false) : null,
+                        data.has("self_deaf") ? data.get("self_deaf").asBoolean(false) : null);
             }
 
             // 广播语音状态
@@ -432,21 +443,22 @@ public class GatewayWebSocketHandler extends TextWebSocketHandler {
 
     public void dispatchMessage(Long channelId, org.discord.entity.Message msg) {
         Map<String, Object> json = messageService.toJson(msg);
-        GatewayMessage gm = buildMessage(GatewayMessage.OP_DISPATCH, json, "MESSAGE_CREATE", 0);
-        String payload = toJsonString(gm);
+        // 公会频道按 guildIds 过滤(非成员收不到),DM 频道只发参与者 — 复用统一分发
+        dispatchChannelEvent(channelId, "MESSAGE_CREATE", json, null);
+    }
 
-        // DM 频道：只发给该 DM 的参与者；公会频道：发给所有在线会话
-        boolean isDm = dmChannelRepository.existsById(channelId);
-        // 预先取出 DM 参与者,避免对每个在线会话重复查库(N+1)
-        Set<Long> dmMemberIds = isDm ? dmMemberRepository.findByChannelId(channelId).stream()
-                .map(DmChannelMember::getUserId).collect(java.util.stream.Collectors.toSet())
-                : Collections.emptySet();
-
-        for (GatewaySession session : sessions.values()) {
-            if (session.status != GatewayStatus.READY || !session.ws.isOpen() || session.userId == null) continue;
-            if (isDm && !dmMemberIds.contains(session.userId)) continue;
-            sendRaw(session.ws, payload);
-        }
+    /** 向公会广播某用户当前语音状态(静音/禁听变更等) */
+    public void broadcastVoiceState(Long guildId, Long userId) {
+        voiceService.getVoiceState(guildId, userId).ifPresent(vs -> {
+            Map<String, Object> vsJson = new HashMap<>();
+            vsJson.put("guild_id", vs.getGuildId().toString());
+            vsJson.put("channel_id", vs.getChannelId().toString());
+            vsJson.put("user_id", vs.getUserId().toString());
+            vsJson.put("session_id", vs.getSessionId());
+            vsJson.put("self_mute", vs.isSelfMute());
+            vsJson.put("self_deaf", vs.isSelfDeaf());
+            dispatchToGuild(guildId, "VOICE_STATE_UPDATE", vsJson, null);
+        });
     }
 
     /**

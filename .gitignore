@@ -50,3 +50,12 @@ data/
 ### Env ###
 .env
 *.log
+
+### 论文构建产物与临时文件 ###
+docs/build/*.log
+docs/build/*.jar
+docs/build/*.pdf
+docs/build/pages-*/
+docs/*.bak-*
+~$*.docx
+client/coverage/

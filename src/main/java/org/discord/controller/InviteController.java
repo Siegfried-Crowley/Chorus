@@ -20,6 +20,7 @@ public class InviteController {
     private final InviteService inviteService;
     private final GuildService guildService;
     private final GatewayWebSocketHandler gatewayHandler;
+    private final org.discord.repository.UserRepository userRepository;
 
     @PostMapping("/guilds/{guildId}/invites")
     public ResponseEntity<Map<String, Object>> createInvite(@PathVariable Long guildId,
@@ -69,6 +70,17 @@ public class InviteController {
         Map<String, Object> addData = new HashMap<>();
         addData.put("guild_id", invite.getGuildId().toString());
         addData.put("user_id", userId.toString());
+        org.discord.entity.GuildMember joined = guildService.getMember(invite.getGuildId(), userId);
+        addData.put("joined_at", joined != null && joined.getJoinedAt() != null
+                ? joined.getJoinedAt().toString() : java.time.Instant.now().toString());
+        addData.put("roles", java.util.List.of());
+        // 附上用户资料,避免成员列表在收到广播时只能显示雪花 ID
+        org.discord.entity.User joinedUser = userRepository.findById(userId).orElse(null);
+        if (joinedUser != null) {
+            addData.put("username", joinedUser.getUsername());
+            addData.put("global_name", joinedUser.getGlobalName());
+            addData.put("avatar", joinedUser.getAvatar());
+        }
         gatewayHandler.dispatchToGuild(invite.getGuildId(), "GUILD_MEMBER_ADD", addData, null);
 
         // 返回公会 + 频道列表

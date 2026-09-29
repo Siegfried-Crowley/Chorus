@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { deepCamel } from './case';
 
 const API_BASE = '';
 
@@ -16,9 +17,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 时清除 token
+// 401 时清除 token；响应体统一 snake_case → camelCase
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    if (res.data && typeof res.data === 'object') {
+      res.data = deepCamel(res.data);
+    }
+    return res;
+  },
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('discord_token');

@@ -28,15 +28,17 @@ const JoinGuildModal: React.FC<Props> = ({ onClose }) => {
     setLoading(true);
     try {
       const res = await inviteApi.join(code.trim());
+      const guildId = res.guildId;
+      if (!guildId) throw new Error('加入失败:缺少公会ID');
       addGuild({
-        id: res.guild_id,
+        id: guildId,
         name: res.name,
         icon: res.icon,
-        ownerId: res.owner_id,
+        ownerId: res.ownerId,
         memberCount: 0,
       });
-      setChannels(res.guild_id, res.channels || []);
-      setActiveGuild(res.guild_id);
+      setChannels(guildId, (res.channels || []).map((c: any) => ({ ...c, guildId })));
+      setActiveGuild(guildId);
       setActiveChannel(null);
       setSidebar('guilds');
       onClose();
@@ -69,12 +71,12 @@ const JoinGuildModal: React.FC<Props> = ({ onClose }) => {
         {preview && (
           <div className="invite-preview">
             <div className="invite-preview-icon">
-              {preview.guild_name?.charAt(0)?.toUpperCase() || '#'}
+              {preview.guildName?.charAt(0)?.toUpperCase() || '#'}
             </div>
             <div>
-              <div className="invite-preview-name">{preview.guild_name || '未知服务器'}</div>
+              <div className="invite-preview-name">{preview.guildName || '未知服务器'}</div>
               <div className="invite-preview-meta">
-                {preview.member_count} 名成员 · {preview.channel_name ? `#${preview.channel_name}` : ''}
+                {preview.memberCount} 名成员 · {preview.channelName ? `#${preview.channelName}` : ''}
               </div>
             </div>
           </div>

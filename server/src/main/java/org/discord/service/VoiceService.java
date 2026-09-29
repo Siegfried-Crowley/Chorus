@@ -67,13 +67,9 @@ public class VoiceService {
     }
 
     @Transactional
-    public Map<String, Object> joinVoice(Long guildId, Long channelId, Long userId, String sessionId) {
-        // 幂等:前端会同时走 网关OP4 和 REST /voice/join 两次加入,重复插入会撞
-        // voice_states(guildId,userId) 复合主键 / 产生重复 allocation。先清旧记录再插入。
-        if (guildId != null) {
-            voiceStateRepository.deleteByGuildIdAndUserId(guildId, userId);
-            allocationRepository.deleteByGuildIdAndUserId(guildId, userId);
-        }
+    public Map<String, Object> joinVoice(Long guildId, Long channelId, Long userId, String sessionId,
+                                             Boolean selfMute, Boolean selfDeaf) {
+        // 先校验后清理:任何校验失败都不应把用户从当前语音频道踢出
         Channel channel = channelRepository.findById(channelId)
                 .orElseThrow(() -> new NotFoundException("Voice channel not found"));
 
@@ -96,17 +92,46 @@ public class VoiceService {
             }
         }
 
+        // 幂等:网关 OP4 与 REST /voice/join 双路并发加入时,同一会话复用未过期分配,
+        // 避免"REST 先发 token、OP4 后删 allocation"导致客户端拿到已失效的 token
+        if (guildId != null && sessionId != null) {
+            VoiceState existing = voiceStateRepository.findByGuildIdAndUserId(guildId, userId).orElse(null);
+            if (existing != null && channelId.equals(existing.getChannelId())
+                    && sessionId.equals(existing.getSessionId())) {
+                if (selfMute != null || selfDeaf != null) {
+                    if (selfMute != null) existing.setSelfMute(selfMute);
+                    if (selfDeaf != null) existing.setSelfDeaf(selfDeaf);
+                    voiceStateRepository.save(existing);
+                    voiceAudioRouter.updateMemberState(userId.toString(), selfMute, selfDeaf);
+                }
+                VoiceAllocation alloc = allocationRepository.findByGuildIdAndUserId(guildId, userId).orElse(null);
+                if (alloc != null && alloc.getExpiresAt() != null && alloc.getExpiresAt().isAfter(Instant.now())) {
+                    VoiceServerInfo server = selectVoiceServer();
+                    if (server != null) return buildJoinResult(alloc, server);
+                }
+            }
+        }
+
+        // 校验通过,清旧状态(换频道/重进)
+        if (guildId != null) {
+            voiceStateRepository.deleteByGuildIdAndUserId(guildId, userId);
+            allocationRepository.deleteByGuildIdAndUserId(guildId, userId);
+        }
+
         // 保存语音状态
         VoiceState vs = VoiceState.builder()
                 .guildId(guildId)
                 .channelId(channelId)
                 .userId(userId)
                 .sessionId(sessionId)
-                .selfMute(false)
-                .selfDeaf(false)
+                .selfMute(selfMute != null && selfMute)
+                .selfDeaf(selfDeaf != null && selfDeaf)
                 .joinedAt(Instant.now())
                 .build();
         voiceStateRepository.save(vs);
+        if (Boolean.TRUE.equals(selfMute) || Boolean.TRUE.equals(selfDeaf)) {
+            voiceAudioRouter.updateMemberState(userId.toString(), selfMute, selfDeaf);
+        }
 
         // 分配 Voice Server
         VoiceServerInfo server = selectVoiceServer();
@@ -143,15 +168,25 @@ public class VoiceService {
         notify.put("token", token);
         cache.publish("voice:events", notify.toString());
 
+        return buildJoinResult(alloc, server);
+    }
+
+    /** 构造 join 响应(新建与幂等复用共用) */
+    private Map<String, Object> buildJoinResult(VoiceAllocation alloc, VoiceServerInfo server) {
         Map<String, Object> result = new HashMap<>();
-        result.put("token", token);
-        result.put("ssrc", ssrc);
+        result.put("token", alloc.getToken());
+        result.put("ssrc", alloc.getSsrc());
         result.put("endpoint", server.ip + ":" + server.wsPort);
         result.put("server_id", server.id);
         result.put("modes", List.of("xsalsa20_poly1305"));
         result.put("port", server.port);
         result.put("ips", List.of(server.ip));
         return result;
+    }
+
+    /** 查询用户当前语音状态(供网关广播静音/禁听变更) */
+    public java.util.Optional<VoiceState> getVoiceState(Long guildId, Long userId) {
+        return voiceStateRepository.findByGuildIdAndUserId(guildId, userId);
     }
 
     @Transactional

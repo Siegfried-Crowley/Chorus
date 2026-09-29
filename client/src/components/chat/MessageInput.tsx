@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store';
 import { messageApi, uploadApi } from '../../utils/api';
-import { displayName } from '../../utils/message';
+import { displayName, toMessage } from '../../utils/message';
 
 interface Props {
   channelId: string;
@@ -76,7 +76,7 @@ const MessageInput: React.FC<Props> = ({ channelId, replyingTo, onCancelReply })
           ? JSON.stringify({ message_id: replyingTo.id, channel_id: replyingTo.channelId })
           : undefined,
       });
-      useStore.getState().replaceOptimisticMessage(channelId, `temp-${nonce}`, msg);
+      useStore.getState().replaceOptimisticMessage(channelId, `temp-${nonce}`, toMessage(msg));
     } catch (err) {
       console.error('Failed to send message', err);
       useStore.getState().removeMessage(channelId, `temp-${nonce}`);

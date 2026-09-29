@@ -7,4 +7,5 @@ import java.util.List;
 public interface InviteRepository extends JpaRepository<Invite, String> {
     List<Invite> findByGuildIdOrderByCreatedAtDesc(Long guildId);
     void deleteByGuildId(Long guildId);
+    void deleteByChannelId(Long channelId);
 }

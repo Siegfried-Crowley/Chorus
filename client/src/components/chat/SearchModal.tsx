@@ -29,7 +29,7 @@ const SearchModal: React.FC<Props> = ({ guildId, onClose, onOpenMessage }) => {
     setLoading(true);
     try {
       const data = await messageApi.search(guildId, q);
-      setResults(data);
+      setResults(Array.isArray(data) ? data : []);
       setSearched(true);
     } catch (err: any) {
       alert(err.response?.data?.error || '搜索失败');

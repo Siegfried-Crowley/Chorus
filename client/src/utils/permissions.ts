@@ -81,7 +81,11 @@ export const computeGuildPerms = (
 ): bigint => {
   const allRoles = Object.values(rolesByGuild?.[guildId] || {}) as any[];
   const everyone = allRoles.find((r: any) => r.id === guildId);
-  const base = everyone?.permissions ? BigInt(everyone.permissions) : 0n;
+  const toPerm = (v: any): bigint => {
+    if (v == null) return 0n;
+    try { return BigInt(v); } catch { return 0n; }
+  };
+  const base = toPerm(everyone?.permissions);
   if ((base & PERMS.ADMINISTRATOR) === PERMS.ADMINISTRATOR) return 0xffffffffffffffn;
 
   let perms = base;
@@ -89,7 +93,7 @@ export const computeGuildPerms = (
   if (member?.roles) {
     for (const roleId of member.roles) {
       const role = allRoles.find((r: any) => r.id === roleId);
-      if (role?.permissions) perms |= BigInt(role.permissions);
+      if (role?.permissions) perms |= toPerm(role.permissions);
     }
   }
   if ((perms & PERMS.ADMINISTRATOR) === PERMS.ADMINISTRATOR) return 0xffffffffffffffn;
@@ -97,4 +101,4 @@ export const computeGuildPerms = (
 };
 
 export const isOwnerOf = (guild: { ownerId: string } | undefined, userId: string) =>
-  guild?.ownerId === userId;
+  String(guild?.ownerId ?? '') === String(userId ?? '');

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { guildApi, inviteApi, uploadApi } from '../../utils/api';
 import { PERMS, PERM_LABELS, hasPerm, isOwnerOf } from '../../utils/permissions';
+import { memberLabel } from '../../utils/message';
 
 interface Props {
   guildId: string;
@@ -19,7 +20,7 @@ const GuildSettingsModal: React.FC<Props> = ({ guildId, onClose }) => {
   useEffect(() => {
     guildApi.getRoles(guildId)
       .then((rs: any[]) => store.setRoles(guildId, rs.map((r) => ({
-        id: r.id, guildId: r.guild_id, name: r.name, color: r.color,
+        id: r.id, guildId: r.guildId ?? r.guild_id, name: r.name, color: r.color,
         hoist: !!r.hoist, position: r.position || 0,
         permissions: r.permissions?.toString?.() || '0', mentionable: !!r.mentionable,
       }))))
@@ -190,8 +191,8 @@ const MembersTab: React.FC<{ guildId: string }> = ({ guildId }) => {
           <div key={m.userId} className="settings-member-row">
             <div className="settings-member-main" onClick={() => setExpanded(expanded === m.userId ? null : m.userId)}>
               <span className="settings-member-name">
-                {m.userId === guild.ownerId ? '👑 ' : ''}
-                {m.nickname || m.userId}
+                {String(m.userId) === String(guild.ownerId) ? '👑 ' : ''}
+                {memberLabel(m)}
               </span>
             </div>
             {expanded === m.userId && m.userId !== guild.ownerId && (
@@ -334,14 +335,17 @@ const RolesTab: React.FC<{ guildId: string }> = ({ guildId }) => {
 };
 
 // ===== 邀请 =====
-const InvitesTab: React.FC<{ guildId: string }> = ({ guildId }) => {
+export const InvitesTab: React.FC<{ guildId: string }> = ({ guildId }) => {
   const { channels, addGuild, setChannels, setActiveGuild, setSidebar } = useStore();
   const [invites, setInvites] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
 
   const refresh = () => {
-    inviteApi.list(guildId).then(setInvites).catch(console.error);
+    inviteApi.list(guildId)
+      .then((data: any) => { setInvites(Array.isArray(data) ? data : []); setLoadError(null); })
+      .catch((err: any) => setLoadError(err.response?.data?.error || '无法加载邀请列表'));
   };
   useEffect(refresh, [guildId]);
 
@@ -378,15 +382,17 @@ const InvitesTab: React.FC<{ guildId: string }> = ({ guildId }) => {
     setBusy(true);
     try {
       const res = await inviteApi.join(joinCode.trim());
+      const guildId = res.guildId;
+      if (!guildId) throw new Error('加入失败:缺少公会ID');
       addGuild({
-        id: res.guild_id,
+        id: guildId,
         name: res.name,
         icon: res.icon,
-        ownerId: res.owner_id,
+        ownerId: res.ownerId,
         memberCount: 0,
       });
-      setChannels(res.guild_id, res.channels || []);
-      setActiveGuild(res.guild_id);
+      setChannels(guildId, (res.channels || []).map((c: any) => ({ ...c, guildId })));
+      setActiveGuild(guildId);
       setSidebar('guilds');
       setJoinCode('');
     } catch (err: any) {
@@ -414,12 +420,13 @@ const InvitesTab: React.FC<{ guildId: string }> = ({ guildId }) => {
       </button>
 
       <div className="invite-list">
-        {invites.length === 0 && <div className="roles-empty">还没有邀请链接</div>}
+        {loadError && <div className="roles-empty">{loadError}</div>}
+        {!loadError && invites.length === 0 && <div className="roles-empty">还没有邀请链接</div>}
         {invites.map((inv) => (
           <div key={inv.code} className="invite-row">
             <code>{inv.code}</code>
             <span className="invite-meta">
-              {inv.max_uses ? `${inv.uses}/${inv.max_uses} 次` : '∞ 次'}
+              {inv.maxUses ? `${inv.uses}/${inv.maxUses} 次` : '∞ 次'}
             </span>
             <button className="btn-cancel" onClick={() => copy(inv.code)}>复制</button>
             <button className="btn-danger" onClick={() => removeInvite(inv.code)}>删除</button>

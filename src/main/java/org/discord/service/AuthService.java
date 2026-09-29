@@ -269,7 +269,7 @@ public class AuthService {
 
     private AuthResponse.UserInfo buildUserInfo(User user) {
         return AuthResponse.UserInfo.builder()
-                .id(user.getId())
+                .id(user.getId().toString())
                 .username(user.getUsername())
                 .discriminator(user.getDiscriminator())
                 .globalName(user.getGlobalName())

@@ -9,4 +9,5 @@ public interface VoiceAllocationRepository extends JpaRepository<VoiceAllocation
     Optional<VoiceAllocation> findByToken(String token);
     void deleteByGuildIdAndUserId(Long guildId, Long userId);
     void deleteByGuildId(Long guildId);
+    void deleteByChannelId(Long channelId);
 }
