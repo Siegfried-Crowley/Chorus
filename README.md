@@ -1,9 +1,9 @@
-# 🎮 Discord Clone
+# 🎵 Chorus
 
 <div align="center">
 
-> **学习项目** — 仅供本地编程学习，拆解 Discord 底层实现逻辑  
-> 功能：文字聊天 · 语音频道（控制面）· 群组权限 · 好友系统 · 私信 · 文件附件
+> **类 Discord 的实时通信平台** — 学习项目，仅供本地编程学习，拆解实时通信的底层实现逻辑  
+> 功能：文字聊天 · 实时语音 · 音视频通话（摄像头/屏幕共享）· 群组权限 · 好友系统 · 私信 · 文件附件
 
 [![JDK](https://img.shields.io/badge/JDK-17+-blue?logo=openjdk)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?logo=spring)](https://spring.io/projects/spring-boot)
@@ -65,7 +65,7 @@
 
 ### 第 1 步：打开项目
 
-用 IntelliJ IDEA 打开 `D:\idea databas\test1`（会自动识别 Maven 项目）。
+用 IntelliJ IDEA 打开 `D:\idea databas\Chorus`（会自动识别 Maven 项目）。
 
 ### 第 2 步：用 IDEA + Tomcat 启动后端
 
@@ -292,14 +292,14 @@ npm start
 ## 📂 项目结构
 
 ```
-D:\IDEA DATABAS\TEST1\              # 项目根目录
+D:\idea databas\Chorus\              # 项目根目录
 │
 ├── 📁 src/                            # 🖥️ 后端主树 (线上 IDEA 部署用, MySQL)
 │   │                                 #    与 server/ 同结构，用 sync.bat 一键同步
-│   └── 📁 main/java/org/discord/  (见下方 server/ 结构)
+│   └── 📁 main/java/org/chorus/  (见下方 server/ 结构)
 │
 ├── 📁 server/                       # 🖥️ 后端 (Spring Boot + Tomcat; docker 用 H2/PostgreSQL)
-│   ├── 📁 src/main/java/org/discord/
+│   ├── 📁 src/main/java/org/chorus/
 │   │   ├── 📄 ChorusApplication.java   # 启动入口 (implements SpringBootServletInitializer)
 │   │   ├── 📁 config/                   # 配置类
 │   │   │   ├── SecurityConfig.java      # Spring Security (JWT无状态)
@@ -557,7 +557,7 @@ cd client && npm install && npm start
 ### 第一次打开项目
 
 ```bash
-File → Open → 选择 D:\idea databas\test1 目录
+File → Open → 选择 D:\idea databas\Chorus 目录
 # IDEA 会自动识别为 Maven 项目，下载依赖
 ```
 
@@ -921,7 +921,7 @@ Gateway 是实时通信的核心，完全对齐 **Discord Gateway Protocol v9**�
 - **MCU**：服务端混音后发一个流 → 服务端 CPU 高、无法单独调音量
 - **SFU**：服务端只转发，每个客户端收 N 个独立流 → 低延迟、可单独调音量
 
-> 实际音频链路（已启用）：后端 `src/main/java/org/discord/voice/VoiceAudioHandler.java` + `VoiceAudioRouter.java`（`/ws/voice`）；前端 `client/src/voice/VoiceClient.ts` + `RemotePlayback.ts` + `voiceProtocol.ts`。  
+> 实际音频链路（已启用）：后端 `src/main/java/org/chorus/voice/VoiceAudioHandler.java` + `VoiceAudioRouter.java`（`/ws/voice`）；前端 `client/src/voice/VoiceClient.ts` + `RemotePlayback.ts` + `voiceProtocol.ts`。  
 > UDP SFU 骨架（未启用）：`server/.../voice/VoiceSfuServer.java`
 
 ---
@@ -1069,7 +1069,7 @@ docker compose up -d
 **解决**：
 
 ```bash
-# ❌ 错误: 在 D:\idea databas\test1\ 下运行
+# ❌ 错误: 在 D:\idea databas\Chorus\ 下运行
 npm start
 
 # ✅ 正确: 先切换到 client 目录

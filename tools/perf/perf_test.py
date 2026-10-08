@@ -1,5 +1,5 @@
 # ============================================================================
-# Discord Clone 性能基准测试
+# Chorus 性能基准测试
 # 测量: REST API 延迟 / Gateway 广播扇出延迟 / 心跳 RTT / 语音中继端到端延迟
 # 运行前提: 后端已启动(http://localhost:4001/chorus), 限流已放宽
 # 用法: python perf_test.py [--base http://localhost:4001/chorus] [--out perf-results.json]

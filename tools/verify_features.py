@@ -15,7 +15,7 @@ import httpx
 import websockets
 
 B = "http://localhost:4001/chorus"
-LOG = r"D:\idea databas\test1\docs\build\backend.log"
+LOG = r"D:\idea databas\Chorus\docs\build\backend.log"
 
 results = []
 
