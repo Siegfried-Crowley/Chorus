@@ -212,7 +212,7 @@ npm start
 | 套件 | 命令 | 覆盖 |
 |------|------|------|
 | 后端 `src/test` | `mvn test` | 登录/注册、安全配置、消息 CRUD、私信与越权、附件持久化、**邀请/加入/退出/踢人/封禁、角色 CRUD、表情回应/置顶/回复/搜索/输入中、改密/邮箱验证/2FA/登录限流、真实音频转发与静音禁听、越权回归（非成员读消息/数据枚举/权限覆盖自授权/搜索通配符转义/附件魔数/未授权 401）**（45 个用例） |
-| 前端 `client/src` | `cd client && npm test` | 网关重连状态机（Identify、幂等 connect、断线 Resume、心跳 ACK）+ **语音帧协议解析/join 帧构造/MIME 探测**（18 个用例） |
+| 前端 `client/src` | `cd client && npm test` | 网关重连状态机（Identify、幂等 connect、断线 Resume、心跳 ACK）+ **语音帧协议解析/join 帧构造/MIME 探测**（23 个用例） |
 
 > 后端另有 `server/` 树（docker 部署用）也带同一套测试：`mvn -f server/pom.xml test`。
 > 测试账号密码哈希已统一修正为 `test123` 对应的 bcrypt 值（原先 `server/` 种子误用了 `password` 的哈希，docker 登录会失败）。
@@ -1193,7 +1193,7 @@ REACT_APP_API_URL=http://localhost:4001/chorus
 
 `.github/workflows/ci.yml` 已就绪：后端双树 job（`setup-java@17` → 分别跑 `mvn test` 与 `cd server && mvn test`）+ 前端 job（`setup-node@20` → `cd client && npm ci && npx tsc --noEmit && npm test`）。
 
-项目已 `git init -b main` 并完成首次本地提交（`feat: complete Discord clone feature set`，已 gitignore `data/`、`client/.env`、`target/`、`dist/`）。**尚未 push 到 GitHub** —— 推上去后 Actions 会自动跑（这一步由你自己执行）。
+项目已 `git init -b main`，远端仓库为 `https://github.com/Siegfried-Crowley/Chorus`，本地提交（含音视频通话、安全加固与 Chorus 改名）**已全部推送到 `origin/main`**；`.gitignore` 已排除 `data/`、`client/.env`、`target/`、`dist/`、`docs/build/`（论文构建中间产物）。每次 push 后 GitHub Actions 会自动跑后端双树与前端 job。
 
 ### ☑️ 2. 收敛双源码树 — ✅ 已完成（方案 B：同步脚本）
 
