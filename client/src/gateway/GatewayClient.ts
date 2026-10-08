@@ -196,14 +196,17 @@ class GatewayClient {
 
   private identify() {
     this.resuming = false;
+    // Node 20 及以下不提供全局 navigator（Node 21+ 才有），需兜底，
+    // 否则单元测试（node 环境）调用 identify 会抛 ReferenceError
+    const nav = typeof navigator === 'undefined' ? null : navigator;
     this.send(2, {
       token: this.token,
       capabilities: 16381,
       properties: {
-        os: navigator.platform,
+        os: nav?.platform ?? '',
         browser: 'Chorus',
         device: '',
-        system_locale: navigator.language,
+        system_locale: nav?.language ?? '',
       },
       presence: {
         status: 'online',
