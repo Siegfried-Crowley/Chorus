@@ -426,7 +426,7 @@ D:\idea databas\Chorus\              # 项目根目录
 │   ├── 📄 verify_features.py           # ✅ 全功能逐项实测脚本 (58 项检查, 需后端已启动)
 │   └── 📁 perf/
 │       └── perf_test.py                # 📊 性能基准 (REST延迟/网关扇出/心跳RTT/语音中继延迟)
-├── 📁 docs/                            # 📚 毕业论文 (md 源稿 + docx 成品 + EA 风格 UML 图 + 界面截图)
+├── 📁 docs/                            # 📚 开题报告 + 毕业论文 (md 源稿 + docx 成品 + EA 风格 UML 图 + 界面截图)
 ├── 📄 sync.bat                         # 🔁 一键同步 src/main/java + src/test → server/
 ├── 📄 docker-compose.yml               # 🐳 一键编排所有服务
 ├── 📄 pom.xml                          # Maven 依赖 (WAR打包)
