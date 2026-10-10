@@ -2,7 +2,7 @@
 
 <div align="center">
 
-> **类 Discord 的实时通信平台** — 学习项目，仅供本地编程学习，拆解实时通信的底层实现逻辑  
+> **社区化实时通信平台** — 学习项目，仅供本地编程学习，拆解实时通信的底层实现逻辑  
 > 功能：文字聊天 · 实时语音 · 音视频通话（摄像头/屏幕共享）· 群组权限 · 好友系统 · 私信 · 文件附件
 
 [![JDK](https://img.shields.io/badge/JDK-17+-blue?logo=openjdk)](https://adoptium.net/)
