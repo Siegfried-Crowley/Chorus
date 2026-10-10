@@ -1123,7 +1123,7 @@ docker compose logs postgres
 # 等看到 "database system is ready to accept connections" 再试
 
 # 确认 .env 或 setenv.bat 中的密码一致:
-# 用户名: discord
+# 用户名: chorus
 # 密码: chorus_dev_2026
 # 数据库名: chorus
 ```
