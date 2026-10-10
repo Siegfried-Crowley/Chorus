@@ -28,7 +28,7 @@ actor "登录用户" as user
 actor "群组成员" as member
 actor "群组管理员\n/所有者" as admin
 
-rectangle "类 Discord 实时通信平台" {
+rectangle "智能音视频实时通讯平台" {
   usecase "注册与邮箱验证" as UC1
   usecase "登录与两步验证" as UC2
   usecase "维护个人资料\n与在线状态" as UC3

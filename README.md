@@ -75,7 +75,7 @@
 2. **配置 Tomcat**：
    - **HTTP port**：`8080`
    - **VM options**：**留空或不填任何 `-Dspring.profiles.active=*` 和 DB 环境变量**（用默认配置）
-   - **Deployment**：添加 `chorus:war exploded`，**Application context** 填 `/discord`
+   - **Deployment**：添加 `chorus:war exploded`，**Application context** 填 `/chorus`
 3. **确保 MySQL 已启动**（本机 3306），数据库 `chorus` 存在
 4. 点 ▶ **运行 Tomcat**，控制台出现 **Tomcat started** 且无报错即部署成功
 
@@ -101,7 +101,7 @@ npm start
 
 浏览器自动打开 `http://localhost:3000` 🎉
 
-> 🔍 **端口分工**：`3000` 是前端页面（Vite），`8080` 是后端接口（Tomcat）。登录时前端会通过 `client/.env` 里的地址把请求发到 `http://localhost:8080/discord`，两者缺一不可。若后端端口不是 8080，请同步修改 `client/.env` 并重启前端。
+> 🔍 **端口分工**：`3000` 是前端页面（Vite），`8080` 是后端接口（Tomcat）。登录时前端会通过 `client/.env` 里的地址把请求发到 `http://localhost:8080/chorus`，两者缺一不可。若后端端口不是 8080，请同步修改 `client/.env` 并重启前端。
 
 ### 第 4 步：登录体验
 
@@ -166,7 +166,7 @@ npm start
 | 屏蔽用户 | 不再接收消息 |
 | 在线状态 | 登录/登出实时推送给好友，登录时拉好友在线快照 |
 
-### 🔐 权限系统（Discord 完全对齐）
+### 🔐 权限系统（角色位掩码 + 频道覆盖）
 | 层级 | 说明 |
 |------|------|
 | @everyone 角色 | 服务器所有成员的默认权限 |
@@ -478,7 +478,7 @@ docker compose down -v       # 停止并删除数据（重新开始）
 | 软件 | 版本 | 下载 | 安装说明 |
 |------|------|------|---------|
 | Tomcat | 10.1+ | [apache-tomcat-10.1.x.exe](https://tomcat.apache.org/download-10.cgi) | 安装时设置端口 8080 |
-| PostgreSQL | 16 | [官网下载](https://www.postgresql.org/download/) | 安装时密码设 `discord_dev_2026` |
+| PostgreSQL | 16 | [官网下载](https://www.postgresql.org/download/) | 安装时密码设 `chorus_dev_2026` |
 | Redis | 7+ | [Redis for Windows](https://github.com/microsoftarchive/redis/releases) | 默认端口 6379 |
 | MinIO | latest | [MinIO Server](https://min.io/download#/windows) | 命令行启动 |
 | JDK | 17+ | [Adoptium Temurin 17](https://adoptium.net/temurin/releases/) | 配置 JAVA_HOME |
@@ -574,8 +574,8 @@ File → Open → 选择 D:\idea databas\Chorus 目录
    │   VM options: (留空,默认 profile;勿用 tomcat) │
    │                                  │
    │ Deployment 标签页                       │
-   │   + → Artifact → discord-cline:war exploded    │
-   │   Application context: /discord                 │
+   │   + → Artifact → chorus:war exploded    │
+   │   Application context: /chorus                 │
    │                                  │
    │ Server 标签页 (下方)                  │
    │   On frame deactivation: Update resources       │
@@ -709,7 +709,7 @@ cd client && npm start
 
 ## 🔐 权限系统
 
-Discord 的权限系统是**业界最复杂的权限模型之一**，本项目完整对齐。
+本项目完整实现了业界通行的**角色位掩码 + 频道覆盖**权限模型。
 
 ### 权限位一览 (64-bit)
 
@@ -819,7 +819,7 @@ CREATE TABLE messages (
 
 ## 🌐 Gateway 协议
 
-Gateway 是实时通信的核心，完全对齐 **Discord Gateway Protocol v9**。
+Gateway 是实时通信的核心，实现了 **Gateway 协议 v9** 的语义。
 
 ### 连接生命周期
 
@@ -928,7 +928,7 @@ Gateway 是实时通信的核心，完全对齐 **Discord Gateway Protocol v9**�
 
 ## 🧠 学习路线建议
 
-如果你是**初学者**，想通过这个项目理解 Discord 的底层原理，建议按以下顺序阅读代码：
+如果你是**初学者**，想通过这个项目理解实时通信平台的底层原理，建议按以下顺序阅读代码：
 
 ### 第一阶段：理解业务流程（30分钟）
 
@@ -972,7 +972,7 @@ Gateway 是实时通信的核心，完全对齐 **Discord Gateway Protocol v9**�
 
 ### 第三阶段：理解最难的部分（1小时）
 
-**权限系统 和 Gateway 协议** 是 Discord 最核心的两个设计：
+**权限系统 和 Gateway 协议** 是此类平台最核心的两个设计：
 
 - 📄 `PermissionService.java` — 权限计算引擎（核心算法）
 - 📄 `GatewayWebSocketHandler.java` — 实时协议处理器
@@ -1001,7 +1001,7 @@ Gateway 是实时通信的核心，完全对齐 **Discord Gateway Protocol v9**�
 
 # 关键配置项:
 server.port: 4001              # 嵌入式端口
-server.servlet.context-path: /discord  # 上下文路径
+server.servlet.context-path: /chorus  # 上下文路径
 
 spring.datasource.url:          # 数据库连接
 spring.data.redis.url:          # Redis 连接
@@ -1013,7 +1013,7 @@ app.minio.endpoint:             # MinIO 地址
 
 ```env
 # 前端同源，由 Vite 代理转发到后端（见 vite.config.ts proxy）
-VITE_API_URL=http://localhost:8080/discord        # REST API 目标
+VITE_API_URL=http://localhost:8080/chorus        # REST API 目标
 VITE_GATEWAY_URL=ws://localhost:3000/ws           # Gateway，走 Vite /ws 代理
 VITE_VOICE_URL=ws://localhost:3000/ws/voice       # 音频中继，走 Vite /ws 代理（废弃旧 4004）
 ```
@@ -1124,7 +1124,7 @@ docker compose logs postgres
 
 # 确认 .env 或 setenv.bat 中的密码一致:
 # 用户名: discord
-# 密码: discord_dev_2026
+# 密码: chorus_dev_2026
 # 数据库名: chorus
 ```
 
@@ -1162,7 +1162,7 @@ services:
 
 ```env
 # 外置 Tomcat 部署:
-REACT_APP_API_URL=http://localhost:8080/discord
+REACT_APP_API_URL=http://localhost:8080/chorus
 
 # Docker 部署:
 REACT_APP_API_URL=http://localhost:4001/chorus
