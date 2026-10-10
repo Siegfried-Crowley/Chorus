@@ -1,23 +1,48 @@
 @startuml fig5-1-sequence
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
+skinparam shadowing false
 skinparam defaultFontName "Microsoft YaHei"
 skinparam defaultFontSize 13
-skinparam shadowing false
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
 skinparam sequence {
-  ParticipantBackgroundColor #FEFECE
-  ParticipantBorderColor #A80036
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
   ParticipantFontColor #000000
-  LifeLineBorderColor #A80036
-  GroupBorderColor #A80036
+  LifeLineBackgroundColor #FFFFFF
+  LifeLineBorderColor #000000
+  ArrowColor #000000
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  ActorFontColor #000000
+  GroupBackgroundColor #FFFFFF
+  GroupBorderColor #000000
+  GroupFontColor #000000
+  DividerBackgroundColor #FFFFFF
+  DividerBorderColor #000000
+  DividerFontColor #000000
+  DelayBackgroundColor #FFFFFF
+  DelayBorderColor #000000
+  ReferenceBackgroundColor #FFFFFF
+  ReferenceBorderColor #000000
 }
 skinparam actor {
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
 skinparam note {
-  BackgroundColor #FFF3C4
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
 
 actor "成员 A\n浏览器" as A

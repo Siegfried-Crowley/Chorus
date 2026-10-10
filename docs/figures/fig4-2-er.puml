@@ -1,27 +1,49 @@
 @startuml fig4-2-er
 !pragma layout smetana
-left to right direction
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontName "Microsoft YaHei"
-skinparam defaultFontSize 15
-skinparam nodesep 12
-skinparam ranksep 30
 skinparam shadowing false
+skinparam defaultFontName "Microsoft YaHei"
+skinparam defaultFontSize 13
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
+skinparam linetype ortho
+skinparam nodesep 22
+skinparam ranksep 60
 skinparam entity {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
-  HeaderBackgroundColor #FFF3C4
+  HeaderBackgroundColor #FFFFFF
 }
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  AttributeFontColor #000000
+  StereotypeFontColor #000000
+}
+' 三层布局（自左向右为层级推进方向，自下而上为依赖深度）：
+'   第一层 用户 / 群组域（users、guilds 及其直接下游）
+'   第二层 频道 / 消息域（channels、messages、覆盖与成员角色）
+'   第三层 语音与附属表（voice_*、invites、bans、audit_log、共享主键类）
+' 只保留真实外键关系；实体按依赖顺序声明，使连线就近连接、避免长距离跨越。
+left to right direction
 
-' === 用户与社交 ===
+' ================= 第一层：用户 / 群组域 =================
 entity "users 用户" as users {
   * id
   --
   邮箱 / 密码哈希
   用户名 / 头像 / 2FA
+}
+entity "guilds 群组" as guilds {
+  * id
+  --
+  名称 / 图标
+  owner_id → users
 }
 entity "relationships 好友关系" as relationships {
   * 用户 + 对方
@@ -33,21 +55,30 @@ entity "dm_channels 私信频道" as dm_channels {
   --
   last_message_id
 }
-entity "dm_channel_members\n私信成员" as dm_channel_members {
-  * 频道 + 用户
-}
 
-' === 群组与其直接下属 ===
-entity "guilds 群组" as guilds {
+' ================= 第二层：频道 / 消息域 =================
+entity "channels 频道" as channels {
   * id
   --
-  名称 / 图标
-  owner_id → users
+  名称 / type(4=分类)
+  position / parent_id
 }
 entity "guild_members 群组成员" as guild_members {
   * 群组 + 用户
   --
   昵称 / 加入时间
+}
+entity "messages 消息" as messages {
+  * channel_id + id
+  --
+  author_id → users
+  内容 / 附件
+}
+entity "channel_overwrites\n频道权限覆盖" as channel_overwrites {
+  * 频道 + 目标
+  --
+  type (0 角色 / 1 成员)
+  allow / deny 位
 }
 entity "roles 角色" as roles {
   * id
@@ -56,11 +87,16 @@ entity "roles 角色" as roles {
   permissions (64 位掩码)
   position
 }
-entity "channels 频道" as channels {
-  * id
+entity "member_roles 成员角色" as member_roles {
+  * 群组 + 用户 + 角色
+}
+
+' ================= 第三层：语音与附属表 =================
+entity "voice_states 语音状态" as voice_states {
+  * 群组 + 用户
   --
-  名称 / type(4=分类)
-  position / parent_id
+  channel_id / session_id
+  self_mute / self_deaf
 }
 entity "invites 邀请" as invites {
   * code
@@ -77,30 +113,6 @@ entity "audit_log 审计日志" as audit_log {
   --
   动作 / 详情 JSON
 }
-
-' === 频道下属与关联 ===
-entity "messages 消息" as messages {
-  * channel_id + id
-  --
-  作者 / 内容 / 附件
-}
-entity "channel_overwrites\n频道权限覆盖" as channel_overwrites {
-  * 频道 + 目标
-  --
-  type (0 角色 / 1 成员)
-  allow / deny 位
-}
-entity "member_roles 成员角色" as member_roles {
-  * 群组 + 用户 + 角色
-}
-entity "voice_states 语音状态" as voice_states {
-  * 群组 + 用户
-  --
-  channel_id / session_id
-  self_mute / self_deaf
-}
-
-' === 语音服务器分配 ===
 entity "voice_servers 语音服务器" as voice_servers {
   * id
   --
@@ -113,8 +125,9 @@ entity "voice_allocations\n语音分配令牌" as voice_allocations {
   token / channel_id
   expires_at (30s)
 }
-
-' === 复合主键(@IdClass) ===
+class "dm_channel_members\n私信成员" as dm_channel_members {
+  * 频道 + 用户
+}
 class "MessageId\n<<IdClass 共享主键>>" as MessageId {
   channel_id : Long
   id : Long
@@ -124,26 +137,25 @@ class "GuildBanId\n<<IdClass 共享主键>>" as GuildBanId {
   user_id : Long
 }
 
-' === 关系 ===
-users ||--o{ guilds : owner
-users ||--o{ guild_members : 加入
-guilds ||--o{ guild_members : 拥有
-guilds ||--o{ roles : 定义
-guilds ||--o{ channels : 包含
-guilds ||--o{ invites : 签发
-guilds ||--o{ bans : 记录
-guilds ||--o{ audit_log : 记录
-channels ||--o{ messages : 承载
-channels ||--o{ channel_overwrites : 覆盖
-channels ||--o{ voice_states : 语音
-users ||--o{ messages : 发送
-roles ||--o{ member_roles : 指派
-guild_members ||--o{ member_roles : 持有
+' ================= 真实外键关系 =================
 users ||--o{ relationships : 发起
 users ||--o{ dm_channels : 参与
 dm_channels ||--o{ dm_channel_members : 包含
-users ||--o{ voice_allocations : 获得
+users ||--o{ guilds : owner
+guilds ||--o{ guild_members : 拥有
+users ||--o{ guild_members : 加入
+guilds ||--o{ roles : 定义
+guilds ||--o{ channels : 包含
+roles ||--o{ member_roles : 指派
+guild_members ||--o{ member_roles : 持有
+channels ||--o{ messages : 承载
+channels ||--o{ channel_overwrites : 覆盖
+channels ||--o{ voice_states : 语音
+guilds ||--o{ invites : 签发
+guilds ||--o{ bans : 记录
+guilds ||--o{ audit_log : 记录
 voice_servers ||--o{ voice_allocations : 分配
+users ||--o{ voice_allocations : 获得
 messages *-- MessageId : 复合主键
 bans *-- GuildBanId : 复合主键
 @enduml

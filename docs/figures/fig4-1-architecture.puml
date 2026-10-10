@@ -1,68 +1,80 @@
 @startuml fig4-1-architecture
 !pragma layout smetana
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
+skinparam shadowing false
 skinparam defaultFontName "Microsoft YaHei"
 skinparam defaultFontSize 13
-skinparam shadowing false
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
+skinparam linetype ortho
 skinparam component {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
 }
-skinparam componentStyle rectangle
 skinparam package {
-  BackgroundColor #FFFFE0
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
 }
 skinparam database {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
 skinparam note {
-  BackgroundColor #FFF3C4
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
+skinparam componentStyle rectangle
+' 竖直分层：前端 → 过滤器 → Web 层 → Service 层 → 仓储 → 数据库，
+' 旁支（权限引擎 / 缓存 / 附件存储 / SFU）与主链路同层并列，避免连线穿框。
+top to bottom direction
 
 package "浏览器（前端 SPA：React 18 + TypeScript + Vite）" {
-  component "聊天 / 好友 / 群组管理界面" as chat
-  component "语音与音视频模块\n(VoiceClient / VideoPlayback)" as voice
-  component "Gateway 客户端\n(心跳 / Resume 状态机)" as gwclient
-}
-
-package "后端（Spring Boot 3.2，Tomcat 10.1）" {
-  component "安全过滤器链\nJwtAuthFilter / RateLimitFilter /\nSecurityHeadersFilter" as sec
-
-  package "Web 层" {
-    component "Controller 层\n10 个 REST 控制器\n(Auth/Guild/Channel/Message/...)" as ctrl
-    component "Gateway WebSocket 处理器\nGatewayWebSocketHandler\n(/ws 事件分发 + 会话管理)" as gateway
-    component "语音中继处理器\nVoiceAudioHandler (/ws/voice 令牌校验+帧解析)\nVoiceAudioRouter (按 userId/kind 分桶转发)" as relay
+  together {
+    component "聊天 / 好友 / 群组管理界面" as chat
+    component "语音与音视频模块\n(VoiceClient / VideoPlayback)" as voice
+    component "Gateway 客户端\n(心跳 / Resume 状态机)" as gwclient
   }
-
-  component "Service 层\n13 个服务\n(业务逻辑 + 权限校验)" as svc
-  component "权限引擎\nPermissionService /\nChannelAccessService" as perm
-  component "进程内缓存 CacheService\n(邮箱验证码 / 2FA / Gateway 会话)" as cache
-  component "Repository 层\nSpring Data JPA" as repo
 }
 
-database "数据库\nH2 / MySQL / PostgreSQL" as db
+component "安全过滤器链\nJwtAuthFilter / RateLimitFilter / SecurityHeadersFilter" as sec
+
+package "Web 层" {
+  component "Controller 层\n10 个 REST 控制器\n(Auth/Guild/Channel/Message/...)" as ctrl
+  component "Gateway WebSocket 处理器\nGatewayWebSocketHandler\n(/ws 事件分发 + 会话管理)" as gateway
+  component "语音中继处理器\nVoiceAudioHandler (/ws/voice 令牌校验+帧解析)\nVoiceAudioRouter (按 userId/kind 分桶转发)" as relay
+}
+
+package "Service 层" {
+  together {
+    component "Service 层\n13 个服务\n(业务逻辑 + 权限校验)" as svc
+    component "权限引擎\nPermissionService /\nChannelAccessService" as perm
+    component "进程内缓存 CacheService\n(邮箱验证码 / 2FA / Gateway 会话)" as cache
+  }
+}
+component "Repository 层\nSpring Data JPA" as repo
 component "本地附件存储\ndata/uploads" as storage
+database "数据库\nH2 / MySQL / PostgreSQL" as db
 component "UDP SFU 原型\nvoice-server 模块 (UDP 4003)\n未接入主链路" as sfu
 
 chat --> sec : HTTP/JSON (REST)
+gwclient <--> gateway : /ws (Identify / Resume / Heartbeat / Dispatch)
 voice --> relay : /ws/voice\n(1 字节 kind + WebM 分片)
-gwclient --> gateway : /ws\n(Identify / Resume / Heartbeat)
-gwclient <-- gateway : Dispatch 事件
 
 sec --> ctrl : 鉴权通过后放行
 ctrl --> svc
+gateway --> svc
+relay --> svc : 加入校验 / 静音·禁听同步
 svc --> repo
 repo --> db
-svc --> perm : 频道/公会权限判定
+svc --> perm : 频道 / 公会权限判定
 svc --> cache : 验证码 / 会话\n(Resume 30s 窗口)
 svc --> storage : 附件读写
-relay --> svc : 加入校验 / 静音·禁听同步
 svc ..> sfu : 分配语音服务器\n(原型，虚线依赖)
 @enduml

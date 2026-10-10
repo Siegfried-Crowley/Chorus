@@ -1,24 +1,34 @@
 @startuml fig4-4-gateway-state
 !pragma layout smetana
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
+skinparam shadowing false
 skinparam defaultFontName "Microsoft YaHei"
 skinparam defaultFontSize 13
-skinparam shadowing false
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
+skinparam linetype ortho
 skinparam state {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
+  AttributeFontColor #000000
 }
 skinparam note {
-  BackgroundColor #FFF3C4
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
+' 主干：AWAITING → IDENTIFYING → READY，断线/恢复构成外侧回环；
+' READY 与 DISCONNECTED 同列竖直贯通，IDENTIFYING 位于左下，
+' 使 READY↔DISCONNECTED、RESUMING↔READY、DISCONNECTED→IDENTIFYING 三条回环各走独立通道。
+top to bottom direction
 
+state "就绪\n(READY)" as ready
 state "等待 Identify\n(AWAITING_IDENTIFY)" as awaiting
 state "识别中\n(IDENTIFYING)" as identifying
-state "就绪\n(READY)" as ready
 state "断线\n(DISCONNECTED)" as disconnected
 state "恢复中\n(RESUMING)" as resuming
 
@@ -33,12 +43,14 @@ resuming --> ready : 恢复成功\n下发 RESUMED 事件
 resuming --> disconnected : 恢复失败\nOP9 Invalid Session
 disconnected --> identifying : 会话缓存过期\n重新 Identify
 
-note right of ready
+' 隐藏连线固定各状态的相对位置，使回环线绕外侧走而不穿越状态框
+awaiting -[hidden]-> identifying
+identifying -[hidden]-> disconnected
+disconnected -[hidden]-> resuming
+
+note bottom of resuming
   · 服务端 125s 未收到心跳 → 关闭连接踢线
   · 会话在断线后于 CacheService 保留 30s 供 Resume
-end note
-
-note bottom
   · 客户端指数退避重连：1s → 2s → 4s → … → 上限 30s
   · close 4004 / 4005（认证失败）不重连，直接上报 AUTH_FAILED
   · 连续 3 次未收到 Heartbeat ACK 触发自愈：重建连接并重新 Identify

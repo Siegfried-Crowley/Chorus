@@ -1,48 +1,59 @@
 @startuml fig4-5-voice-relay
 !pragma layout smetana
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
+skinparam shadowing false
 skinparam defaultFontName "Microsoft YaHei"
 skinparam defaultFontSize 13
-skinparam shadowing false
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
+skinparam linetype ortho
 skinparam component {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
 }
 skinparam componentStyle rectangle
-skinparam package {
-  BackgroundColor #FFFFE0
-  BorderColor #A80036
-  FontColor #000000
-}
-skinparam queue {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
-}
-skinparam note {
-  BackgroundColor #FFF3C4
-  BorderColor #A80036
-}
+' 自上而下的分层：采集 → MediaRecorder → 帧封装 → Handler → Router → 播放；
+' 旁支节点与同层节点并列，避免连线穿过其它方块。
+top to bottom direction
 
 package "发送端客户端（成员 A）" {
-  component "麦克风采集\ngetUserMedia({audio})" as mic
-  component "摄像头 / 屏幕共享采集\ngetUserMedia({video}) /\ngetDisplayMedia()" as cam
+  together {
+    component "麦克风采集\ngetUserMedia({audio})" as mic
+    component "摄像头 / 屏幕共享采集\ngetUserMedia({video}) /\ngetDisplayMedia()" as cam
+  }
   component "MediaRecorder\n音频 50ms 分片 (Opus)\n视频 100ms 分片 (VP8)" as rec
   component "客户端帧封装\nvoiceProtocol.buildFrame\n[1 字节 kind][WebM 分块]\nkind: 0 音频 / 1 摄像头 / 2 屏幕" as frame
 }
 
 package "语音服务端（Spring Boot 进程内中继）" {
-  component "VoiceAudioHandler\n/ws/voice\n令牌校验 + 帧解析" as handler
+  together {
+    component "VoiceAudioHandler\n/ws/voice\n令牌校验 + 帧解析" as handler
+    component "VoiceService\n加入 / 离开 / 静音 / 禁听\n发放 VoiceAllocation 令牌" as voiceSvc
+  }
   component "VoiceAudioRouter\n按 (userId, kind) 分桶\n下行前缀 8 字节大端 userId" as router
-  component "VoiceService\n加入/离开/静音/禁听\n发放 VoiceAllocation 令牌" as voiceSvc
+  component "VoiceSfuServer\nUDP 4003 独立原型\n未接入主链路" as sfu
 }
 
 package "接收端客户端（成员 B / C）" {
-  component "RemotePlayback\n音频（MediaSource）" as remote
-  component "VideoPlayback\n视频（MediaSource）" as video
-  component "播放\nAudio / Video 元素" as play
+  together {
+    component "RemotePlayback\n音频（MediaSource）" as remote
+    component "VideoPlayback\n视频（MediaSource）" as video
+    component "播放\nAudio / Video 元素" as play
+  }
 }
 
 mic --> rec
@@ -50,18 +61,16 @@ cam --> rec
 rec --> frame : WebM 分块
 frame --> handler : WS /ws/voice\n上行 [1B kind][分块]
 handler --> router
-router --> remote : 下行帧 kind=0\n[8B 大端 userId][1B kind][WebM 分块]
-router --> video : 下行帧 kind=1/2\n[8B 大端 userId][1B kind][WebM 分块]
+router --> remote : 下行帧 kind=0\n[8B 大端 userId][1B kind][分区]
+router --> video : 下行帧 kind=1/2\n[8B 大端 userId][1B kind][分区]
 remote --> play
 video --> play
-voiceSvc ..> handler : 客户端携 VoiceAllocation 令牌 join\n(有效期 30s，handler 校验)
+voiceSvc ..> handler : 携带 VoiceAllocation 令牌 join\n(有效期 30s，handler 校验)
+router ..> sfu : 未启用（虚线依赖）
 
-note right of router
-  · 静音仅丢弃 kind=0 音频，摄像头/屏幕共享照常转发
+note right of sfu
+  · 静音仅丢弃 kind=0 音频，摄像头 / 屏幕共享照常转发
   · 禁听接收者被跳过（不收任何帧）
   · 新人加入时重放各已有流缓存的 init 段，保证可解码
 end note
-
-component "VoiceSfuServer\nUDP 4003 独立原型\n未接入主链路" as sfu
-router ..> sfu : 未启用（虚线依赖）
 @enduml

@@ -1,24 +1,31 @@
 @startuml fig4-3-permission-flow
+' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
+skinparam shadowing false
 skinparam defaultFontName "Microsoft YaHei"
 skinparam defaultFontSize 13
-skinparam shadowing false
 skinparam dpi 150
-skinparam ArrowColor #A80036
+skinparam defaultFontColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontColor #000000
+skinparam linetype ortho
 skinparam activity {
-  BackgroundColor #FEFECE
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
   FontColor #000000
-  DiamondBackgroundColor #FFF3C4
-  DiamondBorderColor #A80036
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #000000
 }
-skinparam activityStartColor #A80036
-skinparam activityEndColor #A80036
+skinparam activityStartColor #000000
+skinparam activityEndColor #000000
 skinparam note {
-  BackgroundColor #FFF3C4
-  BorderColor #A80036
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
 }
 
+' 主干自上而下竖直排列；每个判断的「否」分支沿主干继续，
+' 「是」分支统一指向右侧的「返回全部权限」终点，分支线不横穿主干方块。
 start
 note right
   实现：PermissionService.calculateChannelPermissions /
@@ -60,9 +67,9 @@ endif
 :应用角色级频道覆盖\n(按角色 position 升序，先 deny 后 allow);
 :应用本人频道覆盖\n(最高优先级，先 deny 后 allow);
 :得到该用户在本频道的有效权限;
+stop
 note right
   · 分类频道(type=4)对所有成员恒可见，跳过 VIEW_CHANNEL 判定
   · DM 频道不做权限位判定，仅校验用户是否为该 DM 成员
 end note
-stop
 @enduml
