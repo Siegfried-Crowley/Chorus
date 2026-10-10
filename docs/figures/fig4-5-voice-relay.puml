@@ -21,25 +21,47 @@ skinparam queue {
   BackgroundColor #FEFECE
   BorderColor #A80036
 }
-
-package "成员 A 客户端" {
-  component "麦克风采集\ngetUserMedia" as mic
-  component "AudioContext\nOpus 编码封装" as enc
-}
-package "语音服务端（Spring Boot 内嵌 SFU）" {
-  component "VoiceSfuServer\n/ws/voice 端点" as sfu
-  component "VoiceAudioHandler\n二进制帧解析" as handler
-  component "VoiceAudioRouter\n按频道成员表转发\n(过滤静音/禁听成员)" as router
-  component "VoiceService\n加入/离开/令牌校验\n(VoiceAllocation 有效期)" as voiceSvc
-}
-package "成员 B / C 客户端" {
-  component "接收解码\nAudioContext 播放" as dec
+skinparam note {
+  BackgroundColor #FFF3C4
+  BorderColor #A80036
 }
 
-mic --> enc
-enc --> sfu : WebM/Opus 音频帧\n(二进制上行)
-sfu --> handler
+package "发送端客户端（成员 A）" {
+  component "麦克风采集\ngetUserMedia({audio})" as mic
+  component "摄像头 / 屏幕共享采集\ngetUserMedia({video}) /\ngetDisplayMedia()" as cam
+  component "MediaRecorder\n音频 50ms 分片 (Opus)\n视频 100ms 分片 (VP8)" as rec
+  component "客户端帧封装\nvoiceProtocol.buildFrame\n[1 字节 kind][WebM 分块]\nkind: 0 音频 / 1 摄像头 / 2 屏幕" as frame
+}
+
+package "语音服务端（Spring Boot 进程内中继）" {
+  component "VoiceAudioHandler\n/ws/voice\n令牌校验 + 帧解析" as handler
+  component "VoiceAudioRouter\n按 (userId, kind) 分桶\n下行前缀 8 字节大端 userId" as router
+  component "VoiceService\n加入/离开/静音/禁听\n发放 VoiceAllocation 令牌" as voiceSvc
+}
+
+package "接收端客户端（成员 B / C）" {
+  component "RemotePlayback\n音频（MediaSource）" as remote
+  component "VideoPlayback\n视频（MediaSource）" as video
+  component "播放\nAudio / Video 元素" as play
+}
+
+mic --> rec
+cam --> rec
+rec --> frame : WebM 分块
+frame --> handler : WS /ws/voice\n上行 [1B kind][分块]
 handler --> router
-router --> dec : 音频帧下发\n(逐成员转发)
-voiceSvc ..> sfu : 控制面\n(成员进出与令牌)
+router --> remote : 下行帧 kind=0\n[8B 大端 userId][1B kind][WebM 分块]
+router --> video : 下行帧 kind=1/2\n[8B 大端 userId][1B kind][WebM 分块]
+remote --> play
+video --> play
+voiceSvc ..> handler : 客户端携 VoiceAllocation 令牌 join\n(有效期 30s，handler 校验)
+
+note right of router
+  · 静音仅丢弃 kind=0 音频，摄像头/屏幕共享照常转发
+  · 禁听接收者被跳过（不收任何帧）
+  · 新人加入时重放各已有流缓存的 init 段，保证可解码
+end note
+
+component "VoiceSfuServer\nUDP 4003 独立原型\n未接入主链路" as sfu
+router ..> sfu : 未启用（虚线依赖）
 @enduml

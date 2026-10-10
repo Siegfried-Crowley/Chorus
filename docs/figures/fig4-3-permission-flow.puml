@@ -14,20 +14,55 @@ skinparam activity {
 }
 skinparam activityStartColor #A80036
 skinparam activityEndColor #A80036
+skinparam note {
+  BackgroundColor #FFF3C4
+  BorderColor #A80036
+}
 
 start
-:取该用户 @everyone 角色权限作为基线;
-:按位或叠加所有自定义角色权限;
-if (该用户所在角色存在\n频道权限覆盖?) then (是)
-  :应用覆盖 deny 位\n(清除被显式拒绝的权限);
-  :应用覆盖 allow 位\n(置上被显式允许的权限);
+note right
+  实现：PermissionService.calculateChannelPermissions /
+  ChannelAccessService.channelPermissions
+end note
+
+if (该用户是服务器所有者?) then (是)
+  :返回全部权限\n(ALL_PERMISSIONS);
+  stop
 else (否)
 endif
-if (该用户本人存在\n频道权限覆盖?) then (是)
-  :应用覆盖 deny 位;
-  :应用覆盖 allow 位;
+
+:取 @everyone 角色权限作为基线\n(@everyone 角色 ID = guildId);
+if (基线含 ADMINISTRATOR 权限位?) then (是)
+  :返回全部权限;
+  stop
 else (否)
 endif
+
+:按 position 升序叠加\n该成员自定义角色的权限位;
+if (叠加后含 ADMINISTRATOR 权限位?) then (是)
+  :返回全部权限;
+  stop
+else (否)
+  :得到公会级有效权限;
+endif
+
+if (公会权限含 ADMINISTRATOR 权限位?) then (是)
+  :返回全部权限;
+  stop
+else (否)
+endif
+
+if (该频道是否配置了频道覆盖?) then (是)
+  :应用 @everyone 频道覆盖\n(先 deny 清除，后 allow 置上);
+else (否)
+endif
+
+:应用角色级频道覆盖\n(按角色 position 升序，先 deny 后 allow);
+:应用本人频道覆盖\n(最高优先级，先 deny 后 allow);
 :得到该用户在本频道的有效权限;
+note right
+  · 分类频道(type=4)对所有成员恒可见，跳过 VIEW_CHANNEL 判定
+  · DM 频道不做权限位判定，仅校验用户是否为该 DM 成员
+end note
 stop
 @enduml

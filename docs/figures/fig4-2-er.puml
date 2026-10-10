@@ -3,103 +3,147 @@
 left to right direction
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName "Microsoft YaHei"
-skinparam defaultFontSize 17
+skinparam defaultFontSize 15
 skinparam nodesep 12
 skinparam ranksep 30
 skinparam shadowing false
 skinparam dpi 150
 skinparam ArrowColor #A80036
-skinparam class {
+skinparam entity {
   BackgroundColor #FEFECE
   BorderColor #A80036
   FontColor #000000
   HeaderBackgroundColor #FFF3C4
 }
 
-entity "user 用户" as user {
+' === 用户与社交 ===
+entity "users 用户" as users {
   * id
   --
   邮箱 / 密码哈希
   用户名 / 头像 / 2FA
 }
-entity "guild 群组" as guild {
-  * id
-  --
-  名称 / 图标 / 拥有者
-}
-entity "guild_member 成员" as gm {
-  * 群组 + 用户
-  --
-  加入时间
-}
-entity "channel 频道" as ch {
-  * id
-  --
-  名称 / 类型 / 位置
-}
-entity "message 消息" as msg {
-  * 频道 + id
-  --
-  作者 / 内容
-}
-entity "role 角色" as role {
-  * id
-  --
-  权限位掩码(64位)
-}
-entity "member_role\n成员角色" as mr {
-  * 群组 + 用户 + 角色
-}
-entity "channel_overwrite\n权限覆盖" as ov {
-  * 频道 + 目标
-  --
-  allow / deny 位
-}
-entity "relationship 好友" as rel {
+entity "relationships 好友关系" as relationships {
   * 用户 + 对方
   --
-  状态
+  状态 (好友/待接受/已屏蔽)
 }
-entity "dm_channel 私信" as dm {
+entity "dm_channels 私信频道" as dm_channels {
   * id
   --
-  成员集合
+  last_message_id
 }
-entity "invite 邀请" as inv {
+entity "dm_channel_members\n私信成员" as dm_channel_members {
+  * 频道 + 用户
+}
+
+' === 群组与其直接下属 ===
+entity "guilds 群组" as guilds {
+  * id
+  --
+  名称 / 图标
+  owner_id → users
+}
+entity "guild_members 群组成员" as guild_members {
+  * 群组 + 用户
+  --
+  昵称 / 加入时间
+}
+entity "roles 角色" as roles {
+  * id
+  --
+  名称 / 颜色
+  permissions (64 位掩码)
+  position
+}
+entity "channels 频道" as channels {
+  * id
+  --
+  名称 / type(4=分类)
+  position / parent_id
+}
+entity "invites 邀请" as invites {
   * code
   --
-  过期 / 次数限制
+  过期时间 / 次数限制
 }
-entity "guild_ban 封禁" as ban {
+entity "bans 封禁" as bans {
   * 群组 + 用户
   --
   原因
 }
-entity "audit_log 审计" as audit {
+entity "audit_log 审计日志" as audit_log {
   * id
   --
-  动作 / 详情JSON
-}
-entity "voice_state 语音" as vs {
-  * 用户 + 频道
-  --
-  静音 / 禁听
+  动作 / 详情 JSON
 }
 
-guild ||--o{ gm
-user ||--o{ gm
-guild ||--o{ ch
-guild ||--o{ role
-guild ||--o{ inv
-guild ||--o{ ban
-guild ||--o{ audit
-ch ||--o{ msg
-ch ||--o{ ov
-user ||--o{ msg
-role ||--o{ mr
-gm ||--o{ mr
-user ||--o{ vs
-ch ||--o{ vs
-user ||--o{ rel
-user ||--o{ dm
+' === 频道下属与关联 ===
+entity "messages 消息" as messages {
+  * channel_id + id
+  --
+  作者 / 内容 / 附件
+}
+entity "channel_overwrites\n频道权限覆盖" as channel_overwrites {
+  * 频道 + 目标
+  --
+  type (0 角色 / 1 成员)
+  allow / deny 位
+}
+entity "member_roles 成员角色" as member_roles {
+  * 群组 + 用户 + 角色
+}
+entity "voice_states 语音状态" as voice_states {
+  * 群组 + 用户
+  --
+  channel_id / session_id
+  self_mute / self_deaf
+}
+
+' === 语音服务器分配 ===
+entity "voice_servers 语音服务器" as voice_servers {
+  * id
+  --
+  ip / port / region
+}
+entity "voice_allocations\n语音分配令牌" as voice_allocations {
+  * id
+  --
+  群组 + 用户 (唯一)
+  token / channel_id
+  expires_at (30s)
+}
+
+' === 复合主键(@IdClass) ===
+class "MessageId\n<<Embeddable>>" as MessageId {
+  channel_id : Long
+  id : Long
+}
+class "GuildBanId\n<<Embeddable>>" as GuildBanId {
+  guild_id : Long
+  user_id : Long
+}
+
+' === 关系 ===
+users ||--o{ guilds : owner
+users ||--o{ guild_members : 加入
+guilds ||--o{ guild_members : 拥有
+guilds ||--o{ roles : 定义
+guilds ||--o{ channels : 包含
+guilds ||--o{ invites : 签发
+guilds ||--o{ bans : 记录
+guilds ||--o{ audit_log : 记录
+channels ||--o{ messages : 承载
+channels ||--o{ channel_overwrites : 覆盖
+channels ||--o{ voice_states : 语音
+users ||--o{ messages : 发送
+roles ||--o{ member_roles : 指派
+guild_members ||--o{ member_roles : 持有
+users ||--o{ relationships : 发起
+users ||--o{ dm_channels : 参与
+dm_channels ||--o{ dm_channel_members : 包含
+users ||--o{ voice_allocations : 获得
+voice_servers ||--o{ voice_allocations : 分配
+messages *-- MessageId : 复合主键
+bans *-- GuildBanId : 复合主键
 @enduml

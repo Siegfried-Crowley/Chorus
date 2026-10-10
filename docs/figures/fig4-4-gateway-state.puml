@@ -11,15 +11,36 @@ skinparam state {
   BorderColor #A80036
   FontColor #000000
 }
+skinparam note {
+  BackgroundColor #FFF3C4
+  BorderColor #A80036
+}
 
-[*] --> 连接中 : 建立 WebSocket\n(/ws)
-连接中 --> 认证中 : 发送 Identify\n(携带 JWT)
-认证中 --> 就绪 : 服务端确认\n(READY 事件)
-就绪 --> 就绪 : Heartbeat /\nHeartbeat ACK (41.25s)
-就绪 --> 断线 : 连接异常 /\n收到 Reconnect(7)
-断线 --> 恢复中 : 30 秒窗口内\n发送 Resume(6)
-恢复中 --> 就绪 : 恢复成功\n(补发错失事件)
-恢复中 --> 认证中 : 会话失效\nInvalid Session(8)
-断线 --> [*] : 超时未恢复
-认证中 --> 认证中 : 重试认证
+state "等待 Identify\n(AWAITING_IDENTIFY)" as awaiting
+state "识别中\n(IDENTIFYING)" as identifying
+state "就绪\n(READY)" as ready
+state "断线\n(DISCONNECTED)" as disconnected
+state "恢复中\n(RESUMING)" as resuming
+
+[*] --> awaiting : 建立 WebSocket (/ws)\n服务端下发 OP10 Hello\n(heartbeat_interval = 41250ms)
+awaiting --> identifying : 客户端发送 OP2 Identify\n(携带 JWT)
+identifying --> ready : 令牌校验通过\n下发 READY 事件
+identifying --> [*] : 令牌无效\nOP9 Invalid Session
+ready --> ready : OP1 Heartbeat / OP11 Heartbeat ACK\n间隔 41.25s
+ready --> disconnected : 连接异常关闭 / OP7 Reconnect
+disconnected --> resuming : 30s 窗口内发送 OP6 Resume\n(token + session_id)
+resuming --> ready : 恢复成功\n下发 RESUMED 事件
+resuming --> disconnected : 恢复失败\nOP9 Invalid Session
+disconnected --> identifying : 会话缓存过期\n重新 Identify
+
+note right of ready
+  · 服务端 125s 未收到心跳 → 关闭连接踢线
+  · 会话在断线后于 CacheService 保留 30s 供 Resume
+end note
+
+note bottom
+  · 客户端指数退避重连：1s → 2s → 4s → … → 上限 30s
+  · close 4004 / 4005（认证失败）不重连，直接上报 AUTH_FAILED
+  · 连续 3 次未收到 Heartbeat ACK 触发自愈：重建连接并重新 Identify
+end note
 @enduml

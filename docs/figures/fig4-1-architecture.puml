@@ -21,38 +21,48 @@ skinparam database {
   BackgroundColor #FEFECE
   BorderColor #A80036
 }
+skinparam note {
+  BackgroundColor #FFF3C4
+  BorderColor #A80036
+}
 
-package "浏览器（React 18 单页应用）" {
-  component "聊天模块" as chat
-  component "语音模块" as voice
-  component "好友模块" as friend
-  component "群组管理模块" as guild
-  component "Gateway 客户端\n（心跳/Resume 状态机）" as gwclient
+package "浏览器（前端 SPA：React 18 + TypeScript + Vite）" {
+  component "聊天 / 好友 / 群组管理界面" as chat
+  component "语音与音视频模块\n(VoiceClient / VideoPlayback)" as voice
+  component "Gateway 客户端\n(心跳 / Resume 状态机)" as gwclient
 }
 
 package "后端（Spring Boot 3.2，Tomcat 10.1）" {
-  component "Controller 层\n(Auth/Guild/Channel/Message/...)" as ctrl
-  component "Service 层\n(业务逻辑 + 权限校验)" as svc
-  component "Repository 层\n(Spring Data JPA)" as repo
-  component "权限引擎\nPermissionService /\nChannelAccessService" as perm
   component "安全过滤器链\nJwtAuthFilter / RateLimitFilter /\nSecurityHeadersFilter" as sec
-  component "Gateway WebSocket 处理器\n(事件分发 / 会话管理)" as gateway
-  component "语音中继处理器\nVoiceAudioRouter" as relay
+
+  package "Web 层" {
+    component "Controller 层\n10 个 REST 控制器\n(Auth/Guild/Channel/Message/...)" as ctrl
+    component "Gateway WebSocket 处理器\nGatewayWebSocketHandler\n(/ws 事件分发 + 会话管理)" as gateway
+    component "语音中继处理器\nVoiceAudioHandler (/ws/voice 令牌校验+帧解析)\nVoiceAudioRouter (按 userId/kind 分桶转发)" as relay
+  }
+
+  component "Service 层\n13 个服务\n(业务逻辑 + 权限校验)" as svc
+  component "权限引擎\nPermissionService /\nChannelAccessService" as perm
+  component "进程内缓存 CacheService\n(邮箱验证码 / 2FA / Gateway 会话)" as cache
+  component "Repository 层\nSpring Data JPA" as repo
 }
 
-database "MySQL / H2 / PostgreSQL" as db
+database "数据库\nH2 / MySQL / PostgreSQL" as db
+component "本地附件存储\ndata/uploads" as storage
+component "UDP SFU 原型\nvoice-server 模块 (UDP 4003)\n未接入主链路" as sfu
 
-chat --> ctrl : HTTP/JSON (REST)
-friend --> ctrl
-guild --> ctrl
-voice --> relay : /ws/voice\n(音频二进制帧)
-gwclient --> gateway : /ws\n(控制帧)
+chat --> sec : HTTP/JSON (REST)
+voice --> relay : /ws/voice\n(1 字节 kind + WebM 分片)
+gwclient --> gateway : /ws\n(Identify / Resume / Heartbeat)
 gwclient <-- gateway : Dispatch 事件
 
+sec --> ctrl : 鉴权通过后放行
 ctrl --> svc
 svc --> repo
-svc --> perm
-sec --> ctrl : 过滤请求
-relay --> svc
 repo --> db
+svc --> perm : 频道/公会权限判定
+svc --> cache : 验证码 / 会话\n(Resume 30s 窗口)
+svc --> storage : 附件读写
+relay --> svc : 加入校验 / 静音·禁听同步
+svc ..> sfu : 分配语音服务器\n(原型，虚线依赖)
 @enduml

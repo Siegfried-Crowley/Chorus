@@ -43,6 +43,8 @@ rectangle "智能音视频实时通讯平台" {
   usecase "角色与权限覆盖管理" as UC12
   usecase "成员踢出 / 封禁" as UC13
   usecase "查看审计日志" as UC14
+  usecase "音视频通话\n（摄像头/屏幕共享）" as UC15
+  usecase "通过邀请链接加入群组" as UC16
 }
 
 anon --> UC1
@@ -52,10 +54,13 @@ user --> UC4
 user --> UC5
 user --> UC6
 user --> UC10
+user --> UC15
+user --> UC16
 member --> UC7
 member --> UC8
 member --> UC9
 member --> UC10
+member --> UC15
 admin --> UC11
 admin --> UC12
 admin --> UC13
