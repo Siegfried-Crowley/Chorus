@@ -115,11 +115,11 @@ entity "voice_allocations\n语音分配令牌" as voice_allocations {
 }
 
 ' === 复合主键(@IdClass) ===
-class "MessageId\n<<Embeddable>>" as MessageId {
+class "MessageId\n<<IdClass 共享主键>>" as MessageId {
   channel_id : Long
   id : Long
 }
-class "GuildBanId\n<<Embeddable>>" as GuildBanId {
+class "GuildBanId\n<<IdClass 共享主键>>" as GuildBanId {
   guild_id : Long
   user_id : Long
 }
