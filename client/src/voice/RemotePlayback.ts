@@ -8,6 +8,8 @@
 export class RemotePlayback {
   private audio: HTMLAudioElement;
   private mediaSource: MediaSource;
+  /** createObjectURL 产生的 blob URL：必须保存下来，销毁时用它 revoke(读 element.src 会拿到解析后的页面地址) */
+  private readonly objectUrl: string;
   private sourceBuffer: SourceBuffer | null = null;
   private queue: ArrayBuffer[] = [];
   private started = false;
@@ -18,7 +20,8 @@ export class RemotePlayback {
     this.audio = new Audio();
     this.audio.muted = true; // 自动播放策略:先静音起播
     this.mediaSource = new MediaSource();
-    this.audio.src = URL.createObjectURL(this.mediaSource);
+    this.objectUrl = URL.createObjectURL(this.mediaSource);
+    this.audio.src = this.objectUrl;
 
     this.mediaSource.addEventListener('sourceopen', () => {
       try {
@@ -120,6 +123,16 @@ export class RemotePlayback {
       /* 忽略 */
     }
     this.audio.pause();
-    this.audio.src = '';
+    try {
+      this.audio.removeAttribute('src');
+      this.audio.load();
+    } catch {
+      /* 忽略 */
+    }
+    try {
+      URL.revokeObjectURL(this.objectUrl);
+    } catch {
+      /* 忽略 */
+    }
   }
 }

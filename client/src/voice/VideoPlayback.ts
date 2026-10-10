@@ -11,6 +11,8 @@ import type { FrameKind } from './voiceProtocol';
 export class VideoPlayback {
   readonly element: HTMLVideoElement;
   private mediaSource: MediaSource;
+  /** createObjectURL 产生的 blob URL：必须保存下来，销毁时用它 revoke(置空 src 后再读会拿到页面地址) */
+  private readonly objectUrl: string;
   private sourceBuffer: SourceBuffer | null = null;
   private queue: ArrayBuffer[] = [];
   private started = false;
@@ -25,7 +27,8 @@ export class VideoPlayback {
     this.element.playsInline = true;
     this.element.setAttribute('playsinline', '');
     this.mediaSource = new MediaSource();
-    this.element.src = URL.createObjectURL(this.mediaSource);
+    this.objectUrl = URL.createObjectURL(this.mediaSource);
+    this.element.src = this.objectUrl;
 
     this.mediaSource.addEventListener('sourceopen', () => {
       try {
@@ -119,12 +122,13 @@ export class VideoPlayback {
       /* 忽略 */
     }
     try {
-      this.element.src = '';
+      this.element.removeAttribute('src');
+      this.element.load();
     } catch {
       /* 忽略 */
     }
     try {
-      URL.revokeObjectURL(this.element.src);
+      URL.revokeObjectURL(this.objectUrl);
     } catch {
       /* 忽略 */
     }
