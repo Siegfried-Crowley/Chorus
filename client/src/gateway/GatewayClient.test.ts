@@ -3,7 +3,7 @@ import GatewayClient from './GatewayClient';
 
 /**
  * Mock WebSocket：捕获实例与发帧，测试可手动驱动 open / receive / close。
- * 复刻浏览器 WebSocket 的最小协议面（属性事件、readyState、send、close）。
+ * 模拟浏览器 WebSocket 的最小协议面（属性事件、readyState、send、close）。
  */
 class MockWebSocket {
   static instances: MockWebSocket[] = [];

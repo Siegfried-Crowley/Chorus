@@ -6,6 +6,23 @@ on:
   pull_request:
 
 jobs:
+  wording:
+    name: Wording compliance (对外口径检查)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 拦截"自称复现/对标 Discord"类表述、口径不一致与旧数字残留
+      - name: Install python-docx (docx 成品也在检查范围内)
+        run: pip install python-docx
+
+      - name: Check wording
+        run: python tools/check-wording.py
+
   backend:
     name: Backend src (mvn test)
     runs-on: ubuntu-latest
