@@ -1,5 +1,5 @@
 @startuml fig4-2-er
-!pragma layout smetana
+' 引擎说明：本图用 Graphviz(dot) 正交布线（对比后优于内置 Smetana 的斜线布局）
 ' ===== 统一黑白打印样式：白底 / 黑框 / 黑字 / 无阴影 =====
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
