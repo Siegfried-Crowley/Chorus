@@ -69,8 +69,8 @@ FORBIDDEN = [
 ]
 
 MUST_HAVE = [
-    ("docs/毕业论文.md", "基于 Spring Boot 与 React 的智能音视频实时通讯平台的设计与实现", "论文标题须为 A 题目"),
-    ("docs/开题报告.md", "基于 Spring Boot 与 React 的智能音视频实时通讯平台的设计与实现", "开题报告题目须与论文一致"),
+    ("docs/毕业论文.md", "基于 Spring Boot 与 React 的智能音视频实时通讯系统的设计与实现", "论文标题须为 A 题目"),
+    ("docs/开题报告.md", "基于 Spring Boot 与 React 的智能音视频实时通讯系统的设计与实现", "开题报告题目须与论文一致"),
 ]
 
 FACT_CHECKS = [

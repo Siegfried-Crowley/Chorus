@@ -1220,7 +1220,7 @@ mvn -f server/pom.xml test   :: 双验证
 
 - **不得出现**「类 Discord」「Discord 克隆」「复刻」「对标」「完全对齐」「与官方语义一致」等表述（wording-check:ignore）：
   本项目是**独立设计并实现**的同类系统；Discord 仅作为**行业举例、研究现状与模型出处**被引用（附参考文献）
-- **题目统一**：基于 Spring Boot 与 React 的智能音视频实时通讯平台的设计与实现
+- **题目统一**：基于 Spring Boot 与 React 的智能音视频实时通讯系统的设计与实现
 - **用例数口径**：后端 45 + 前端 23 = 68
 - **本地自检**：`python tools/check-wording.py`（CI 的 `wording` job 跑同一条命令，未通过则流水线失败）
 
